@@ -5,6 +5,7 @@
  * y comuna, en vez de pedirle que revise el catálogo completo.
  */
 
+import { formatearUf } from "@/lib/dominio/chile";
 import type { Proyecto } from "@/lib/dominio/tipos";
 import type { ModeloProyecto } from "@/lib/jetbrokers/tipos";
 
@@ -80,7 +81,7 @@ export function buscarCandidatos(
         // Mientras más cerca del techo, mejor aprovecha su capacidad.
         const aprovechamiento = precioUf / criterios.presupuestoUf;
         puntaje += 20 + Math.round(aprovechamiento * 15);
-        motivos.push(`Entra en su presupuesto de UF ${criterios.presupuestoUf}`);
+        motivos.push(`Entra en su presupuesto de ${formatearUf(criterios.presupuestoUf)}`);
       } else if (precioUf <= criterios.presupuestoUf * 1.1) {
         puntaje += 8;
         motivos.push("Queda apenas sobre su presupuesto: negociable con descuento");

@@ -103,10 +103,17 @@ describe("capacidad de compra", () => {
     assert.equal(capacidad.restriccion, "dicom");
   });
 
-  it("marca el pie como restricción cuando no hay ahorro", () => {
-    const capacidad = capacidadCompra(perfil({ rentaClp: 2_000_000 }), UF);
-    assert.equal(capacidad.precioMaximoUf, 0);
-    assert.equal(capacidad.restriccion, "pie");
+  it("distingue entre no declarar ahorro y no tener ahorro", () => {
+    // No lo mencionó: el techo es el crédito que soporta su renta.
+    const sinDato = capacidadCompra(perfil({ rentaClp: 2_000_000 }), UF);
+    assert.ok(sinDato.precioMaximoUf! > 2000);
+    assert.equal(sinDato.restriccion, "renta");
+    assert.ok(sinDato.notas.some((nota) => nota.includes("Confirmar el pie")));
+
+    // Declaró que no tiene: no puede comprar hasta juntar el 20%.
+    const sinAhorro = capacidadCompra(perfil({ rentaClp: 2_000_000, ahorroClp: 0 }), UF);
+    assert.equal(sinAhorro.precioMaximoUf, 0);
+    assert.equal(sinAhorro.restriccion, "pie");
   });
 
   it("pondera la renta variable al 50%", () => {
@@ -254,6 +261,7 @@ describe("puntaje y estado del pipeline", () => {
       banos: null,
       presupuestoUfDeclarado: null,
       creditoPreaprobado: null,
+      pagaContado: null,
       postulaSubsidio: null,
       pideVisita: false,
       urgencia: "media",
@@ -293,6 +301,19 @@ describe("puntaje y estado del pipeline", () => {
     const capacidad = capacidadCompra(perfil({ rentaClp: 2_000_000, tieneDicom: true }), UF);
     const resultado = evaluar(extraccion({ pideVisita: true }), capacidad, candidatos);
     assert.equal(resultado.estadoSugerido, "noQualify");
+  });
+
+  it("trata el crédito preaprobado como capacidad demostrada", () => {
+    // No dice renta ni ahorro, pero el banco ya lo evaluó.
+    const capacidad = capacidadCompra(perfil({}), UF);
+    const resultado = evaluar(
+      extraccion({ creditoPreaprobado: true, pideVisita: true, urgencia: "alta" }),
+      capacidad,
+      candidatos,
+      3500,
+    );
+    assert.notEqual(resultado.estadoSugerido, "callAgain");
+    assert.ok(resultado.puntaje >= 60, `puntaje demasiado bajo: ${resultado.puntaje}`);
   });
 
   it("pide datos cuando el mensaje no trae nada financiero", () => {
@@ -344,5 +365,45 @@ describe("mapeo al CRM", () => {
     assert.equal(payload.comuna, "Ñuñoa");
     assert.ok((payload.comments?.length ?? 0) <= 500);
     assert.deepEqual(avisos, []);
+  });
+});
+
+describe("casos chilenos que el mensaje declara sin números de renta", () => {
+  it("lee el presupuesto en UF sin perder dígitos", () => {
+    // "UF 4700" se leía como 470 por el separador de miles del regex.
+    const cuatroMil = extraerPerfilHeuristico(lead({ mensajeInicial: "Busco hasta UF 4700 en Ñuñoa" }));
+    assert.equal(cuatroMil.presupuestoUfDeclarado, 4700);
+
+    const conPunto = extraerPerfilHeuristico(lead({ mensajeInicial: "Tengo hasta UF 12.500" }));
+    assert.equal(conPunto.presupuestoUfDeclarado, 12500);
+
+    const corto = extraerPerfilHeuristico(lead({ mensajeInicial: "Mi tope es UF 950" }));
+    assert.equal(corto.presupuestoUfDeclarado, 950);
+  });
+
+  it("trata la compra al contado como capacidad plena", () => {
+    const extraccion = extraerPerfilHeuristico(
+      lead({ mensajeInicial: "Pago al contado si los números dan, tengo $180.000.000 disponibles" }),
+    );
+    assert.equal(extraccion.pagaContado, true);
+    assert.equal(extraccion.ahorroClp, 180_000_000);
+
+    const capacidad = capacidadCompra(
+      perfil({ ahorroClp: 180_000_000 }),
+      UF,
+      { pagaContado: true },
+    );
+    // UF 4.500 en efectivo: no pasa por evaluación bancaria.
+    assert.equal(capacidad.precioMaximoUf, 4500);
+    assert.equal(capacidad.restriccion, "contado");
+  });
+
+  it("advierte que el subsidio no está sumado al techo", () => {
+    const capacidad = capacidadCompra(
+      perfil({ rentaClp: 900_000, ahorroClp: 6_000_000 }),
+      UF,
+      { postulaSubsidio: true },
+    );
+    assert.ok(capacidad.notas.some((nota) => nota.includes("subsidio")));
   });
 });

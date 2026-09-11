@@ -17,13 +17,21 @@ export function evaluar(
   extraccion: Extraccion,
   capacidad: CapacidadCompra,
   candidatos: Candidato[],
+  /** Presupuesto efectivo con el que se buscó inventario, en UF. */
+  presupuestoUf: number | null = null,
 ): Evaluacion {
+  // Un crédito ya aprobado vale como capacidad demostrada aunque el mensaje
+  // no diga la renta: el banco ya evaluó a esta persona.
+  const preaprobado = extraccion.creditoPreaprobado === true && (presupuestoUf ?? 0) > 0;
+
   // Capacidad de pago: hasta 45 puntos.
   let capacidadPuntos = 0;
   if (capacidad.restriccion === "dicom") capacidadPuntos = 0;
-  else if (capacidad.precioMaximoUf === null) capacidadPuntos = 8;
-  else if (capacidad.restriccion === "pie") capacidadPuntos = 22;
-  else capacidadPuntos = 45;
+  else if (capacidad.restriccion === "contado") capacidadPuntos = 45;
+  else if (capacidad.precioMaximoUf !== null && capacidad.restriccion !== "pie") capacidadPuntos = 45;
+  else if (capacidad.restriccion === "pie" && capacidad.precioMaximoUf) capacidadPuntos = 22;
+  else if (preaprobado) capacidadPuntos = 38;
+  else capacidadPuntos = 8;
 
   // Intención: hasta 25 puntos.
   let intencionPuntos = 0;
@@ -48,7 +56,7 @@ export function evaluar(
   if (capacidad.restriccion === "dicom") {
     estadoSugerido = "noQualify";
     siguienteAccion = "nutrir";
-  } else if (capacidad.precioMaximoUf === null) {
+  } else if (capacidad.precioMaximoUf === null && !preaprobado) {
     // No alcanza para calificar: hay que pedir renta y ahorro.
     estadoSugerido = "callAgain";
     siguienteAccion = "responder_y_pedir_datos";

@@ -21,7 +21,12 @@ import { evaluar } from "@/lib/agente/puntaje";
 import { tienda } from "@/lib/datos";
 import { inventario } from "@/lib/datos/inventario";
 import { nuevoId } from "@/lib/datos/tienda";
-import { bloquesDisponibles, comisionUf as comisionEstandar, valorUf } from "@/lib/dominio/chile";
+import {
+  bloquesDisponibles,
+  comisionUf as comisionEstandar,
+  formatearFecha,
+  valorUf,
+} from "@/lib/dominio/chile";
 import { capacidadCompra } from "@/lib/dominio/financiamiento";
 import type {
   Actividad,
@@ -34,6 +39,7 @@ import type {
 } from "@/lib/dominio/tipos";
 import { jetBrokersDesdeEntorno } from "@/lib/jetbrokers/cliente";
 import { aClienteJetBrokers } from "@/lib/jetbrokers/mapeo";
+import { ETIQUETA_ESTADO } from "@/lib/jetbrokers/tipos";
 
 export const FIRMA = process.env.GESTOR_FIRMA ?? "Equipo Comercial";
 
@@ -134,7 +140,10 @@ export async function gestionarLead(leadId: string): Promise<ResultadoGestion> {
 
   // 2. Capacidad de compra.
   const perfil = perfilDesdeExtraccion(extraccion, lead.perfil);
-  const capacidad = capacidadCompra(perfil, uf.valor);
+  const capacidad = capacidadCompra(perfil, uf.valor, {
+    pagaContado: extraccion.pagaContado === true,
+    postulaSubsidio: extraccion.postulaSubsidio === true,
+  });
 
   // El techo calculado manda por sobre lo que el comprador declara: la
   // banca evalúa con renta y deudas, no con expectativas.
@@ -148,7 +157,7 @@ export async function gestionarLead(leadId: string): Promise<ResultadoGestion> {
   );
 
   // 4. Puntaje y estado.
-  const evaluacion = evaluar(extraccion, capacidad, candidatos);
+  const evaluacion = evaluar(extraccion, capacidad, candidatos, presupuestoUf);
 
   // 5. Redacción.
   const horarios = bloquesDisponibles(new Date(), 4);
@@ -241,7 +250,7 @@ export async function gestionarLead(leadId: string): Promise<ResultadoGestion> {
     await registrar(
       lead.id,
       "estado_cambiado",
-      `De ${previa.estado} a ${oportunidad.estado}`,
+      `De ${ETIQUETA_ESTADO[previa.estado]} a ${ETIQUETA_ESTADO[oportunidad.estado]}`,
     );
   }
 
@@ -269,7 +278,11 @@ export async function gestionarLead(leadId: string): Promise<ResultadoGestion> {
       notas: `Propuesta automática para ${mejor.proyecto.nombre}`,
       creadaEn: ahora,
     });
-    await registrar(lead.id, "visita_propuesta", `${mejor.proyecto.nombre} - ${horarios[0].inicio.toLocaleString("es-CL")}`);
+    await registrar(
+      lead.id,
+      "visita_propuesta",
+      `${mejor.proyecto.nombre} - ${formatearFecha(horarios[0].inicio.toISOString())}`,
+    );
   }
 
   if (evaluacion.siguienteAccion === "derivar_a_ejecutivo") {

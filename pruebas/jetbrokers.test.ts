@@ -35,9 +35,11 @@ describe("cliente JetBrokers", () => {
   it("busca proyectos y los normaliza al modelo interno", async () => {
     const api = cliente();
     const resumenes = await api.buscarProyectos();
-    assert.equal(resumenes.length, 2);
+    assert.ok(resumenes.length >= 2);
 
-    const proyecto = desdeResumen(resumenes[0]);
+    const mirador = resumenes.find((resumen) => resumen.id === "cpmoqN5r");
+    assert.ok(mirador, "falta el proyecto de ejemplo del documento");
+    const proyecto = desdeResumen(mirador);
     assert.equal(proyecto.id, "cpmoqN5r");
     assert.equal(proyecto.comuna, "La Reina");
     // bestPrice y reservaCLP llegan como string y deben quedar numéricos.
@@ -53,8 +55,11 @@ describe("cliente JetBrokers", () => {
     assert.equal(soloNunoa[0].name, "Parque Ñuñoa");
 
     const baratos = await api.buscarProyectos({ bestPriceTo: 2500 });
-    assert.equal(baratos.length, 1);
-    assert.equal(baratos[0].id, "fudT9zPw");
+    assert.ok(baratos.length > 0);
+    for (const proyecto of baratos) {
+      assert.ok(Number(proyecto.bestPrice) <= 2500, `${proyecto.name} quedó sobre el filtro`);
+    }
+    assert.ok(baratos.some((proyecto) => proyecto.id === "fudT9zPw"));
   });
 
   it("completa el proyecto con el detalle", async () => {

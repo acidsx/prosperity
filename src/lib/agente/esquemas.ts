@@ -29,6 +29,10 @@ export const EsquemaExtraccion = z.object({
   banos: z.number().nullable(),
   presupuestoUfDeclarado: z.number().nullable().describe("Presupuesto en UF si lo declara"),
   creditoPreaprobado: z.boolean().nullable(),
+  pagaContado: z
+    .boolean()
+    .nullable()
+    .describe("Si dice que compra al contado, sin crédito hipotecario"),
   postulaSubsidio: z.boolean().nullable().describe("Si menciona subsidio DS19, DS01 o similar"),
   pideVisita: z.boolean().describe("Si pide visitar, agendar o ver la propiedad"),
   urgencia: z.enum(["alta", "media", "baja"]),

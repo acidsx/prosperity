@@ -27,8 +27,8 @@ export interface CapacidadCompra {
   pieUf: number;
   /** Techo de compra en UF. null si no hay datos suficientes. */
   precioMaximoUf: number | null;
-  /** Qué limita la compra: la renta, el pie, o nada aún. */
-  restriccion: "renta" | "pie" | "dicom" | "sin_datos";
+  /** Qué limita la compra: la renta, el pie, el efectivo disponible, o nada aún. */
+  restriccion: "renta" | "pie" | "dicom" | "contado" | "sin_datos";
   notas: string[];
 }
 
@@ -39,7 +39,18 @@ function capitalDesdeDividendo(dividendoUf: number): number {
   return (dividendoUf * (factor - 1)) / (tasaMensual * factor);
 }
 
-export function capacidadCompra(perfil: PerfilFinanciero, valorUfClp: number): CapacidadCompra {
+export interface ContextoCompra {
+  /** Compra sin crédito: el techo es el efectivo que tiene. */
+  pagaContado?: boolean;
+  /** Postula a subsidio habitacional: el monto aprobado se suma al pie. */
+  postulaSubsidio?: boolean;
+}
+
+export function capacidadCompra(
+  perfil: PerfilFinanciero,
+  valorUfClp: number,
+  contexto: ContextoCompra = {},
+): CapacidadCompra {
   const notas: string[] = [];
 
   const rentaBase = perfil.rentaClp ?? 0;
@@ -54,8 +65,30 @@ export function capacidadCompra(perfil: PerfilFinanciero, valorUfClp: number): C
     notas.push("La renta variable se pondera al 50%, como hace la banca.");
   }
 
+  // "No lo mencionó" no es lo mismo que "no tiene": si el mensaje no habla
+  // del ahorro, el pie queda por confirmar, no en cero.
+  const declaraAhorro = perfil.ahorroClp !== null;
   const ahorroClp = perfil.ahorroClp ?? 0;
   const pieUf = valorUfClp > 0 ? Math.round((ahorroClp / valorUfClp) * 10) / 10 : 0;
+
+  if (contexto.pagaContado && ahorroClp > 0) {
+    // Sin crédito no hay evaluación bancaria: el techo es lo que tiene.
+    notas.push("Compra al contado: el techo es el efectivo disponible, sin evaluación bancaria.");
+    return {
+      rentaPonderadaClp,
+      dividendoMaximoClp: 0,
+      pieUf,
+      precioMaximoUf: Math.round(pieUf),
+      restriccion: "contado",
+      notas,
+    };
+  }
+
+  if (contexto.postulaSubsidio) {
+    notas.push(
+      "Postula a subsidio habitacional: el monto que le aprueben se suma al pie y no está considerado en este techo.",
+    );
+  }
 
   if (perfil.tieneDicom === true) {
     notas.push("Registra Dicom: la preaprobación hipotecaria es poco probable hasta regularizar.");
@@ -102,7 +135,13 @@ export function capacidadCompra(perfil: PerfilFinanciero, valorUfClp: number): C
   let precioMaximoUf: number;
   let restriccion: CapacidadCompra["restriccion"];
 
-  if (pieUf === 0) {
+  if (!declaraAhorro) {
+    // Techo conservador: solo el crédito que soporta su renta. Al no saber
+    // el pie, no se le suma nada encima.
+    precioMaximoUf = creditoMaximoUf;
+    restriccion = "renta";
+    notas.push("No declara ahorro para el pie: el techo considera solo el crédito. Confirmar el pie antes de cotizar.");
+  } else if (pieUf === 0) {
     precioMaximoUf = 0;
     restriccion = "pie";
     notas.push("Sin ahorro para el pie: la banca exige al menos 20% del precio.");

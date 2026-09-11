@@ -33,7 +33,9 @@ function montosClp(texto: string): number[] {
 }
 
 function montoUf(texto: string): number | null {
-  const coincidencia = texto.match(/UF\s?\.?\s?(\d{1,3}(?:[.,]\d{3})*|\d+)/i);
+  // La forma con separador de miles va primero y exige al menos un grupo:
+  // si no, "UF 4700" calzaría como 470 y dejaría el 0 afuera.
+  const coincidencia = texto.match(/UF\s?\.?\s?(\d{1,3}(?:[.,]\d{3})+|\d+)\b/i);
   if (!coincidencia) return null;
   const valor = Number(coincidencia[1].replace(/[.,]/g, ""));
   return Number.isFinite(valor) ? valor : null;
@@ -65,6 +67,7 @@ export function extraerPerfilHeuristico(lead: Lead): Extraccion {
   const banos = texto.match(/(\d)\s?[bB](?:a[ñn]o)?\b/);
 
   const paraInvertir = /invers|arrend|airbnb|plusval|renta(?:bilidad)?/i.test(plano);
+  const pagaContado = /al contado|pago contado|sin cr[ée]dito|efectivo/i.test(plano);
   const paraVivir = /vivir|primera vivienda|mi familia|mi señora|mi esposa|mi pareja/i.test(plano);
 
   return {
@@ -95,6 +98,7 @@ export function extraerPerfilHeuristico(lead: Lead): Extraccion {
     presupuestoUfDeclarado: montoUf(texto) ?? lead.presupuestoUfDeclarado,
     creditoPreaprobado: /preaprobad|aprobado|pre-aprobad/i.test(plano) || null,
     postulaSubsidio: /subsidio|ds\s?19|ds\s?01/i.test(plano) || null,
+    pagaContado: pagaContado || null,
     pideVisita: /visit|ver el|conocer|agendar|mostrar/i.test(plano),
     urgencia: /esta semana|urgente|mañana|viajo|sábado|hoy/i.test(plano)
       ? "alta"

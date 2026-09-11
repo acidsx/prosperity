@@ -173,6 +173,14 @@ const PLANTILLAS: Array<(ctx: { comuna: string; presupuesto: number }) => string
     `Hola, quiero cotizar pero les cuento de frentón que estuve en Dicom hasta el año pasado. ¿Igual puedo postular a un crédito?`,
   ({ comuna }) =>
     `Buenas! Busco depto de 2D2B en ${comuna} para arrendar en Airbnb. ¿Tienen algo con arriendo garantizado?`,
+  ({ comuna, presupuesto }) =>
+    `Hola, quiero agendar una visita al proyecto de ${comuna}. Tengo preaprobado UF ${presupuesto} en el Santander y $45.000.000 de pie. ¿Qué horarios tienen esta semana?`,
+  ({ presupuesto }) =>
+    `Buenas tardes, me gustaría ir a ver el depto. Gano $3.200.000 líquidos a honorarios y tengo $52.000.000 ahorrados. Mi tope es UF ${presupuesto}.`,
+  ({ comuna }) =>
+    `Hola! Somos matrimonio, buscamos casa en ${comuna} para vivir. Juntos ganamos $4.500.000 y tenemos $70.000.000 de pie. ¿Podemos visitar el sábado?`,
+  ({ presupuesto }) =>
+    `Estimados, quiero conocer el proyecto. Pago al contado, tengo $210.000.000 disponibles y busco hasta UF ${presupuesto} para inversión.`,
 ];
 
 export function generarLeads(cantidad: number, proyectos: Proyecto[], semilla = 77): Lead[] {
