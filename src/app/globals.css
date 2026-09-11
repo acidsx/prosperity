@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme {
+  --color-tinta: #101418;
+  --color-tinta-suave: #5b6672;
+  --color-borde: #e3e7ec;
+  --color-lienzo: #f6f7f9;
+  --color-marca: #14532d;
+  --color-marca-suave: #dcfce7;
+  --color-alerta: #b45309;
+  --color-alerta-suave: #fef3c7;
+  --color-frio: #1e40af;
+  --color-frio-suave: #dbeafe;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-lienzo);
+  color: var(--color-tinta);
+  font-feature-settings: "cv05", "ss01";
+}
