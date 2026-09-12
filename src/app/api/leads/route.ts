@@ -11,8 +11,8 @@ import { NextResponse } from "next/server";
 
 import { gestionarLead } from "@/lib/agente/gestor";
 import { tienda } from "@/lib/datos";
-import { nuevoId } from "@/lib/datos/tienda";
-import { PERFIL_VACIO, type CanalLead, type Lead } from "@/lib/dominio/tipos";
+import { nuevoLead, nuevoMensaje } from "@/lib/dominio/fabricas";
+import type { CanalLead, Lead } from "@/lib/dominio/tipos";
 
 export const runtime = "nodejs";
 
@@ -63,8 +63,7 @@ export async function POST(peticion: Request) {
 
   const presupuesto = Number(cuerpo.presupuestoUf);
 
-  const lead: Lead = {
-    id: nuevoId("lead"),
+  const lead: Lead = nuevoLead({
     nombre,
     email: texto(cuerpo.email),
     telefono: texto(cuerpo.mobile) ?? texto(cuerpo.telefono),
@@ -76,21 +75,20 @@ export async function POST(peticion: Request) {
     comunasInteres: comunas,
     presupuestoUfDeclarado: Number.isFinite(presupuesto) && presupuesto > 0 ? presupuesto : null,
     sexo: cuerpo.sex === "male" || cuerpo.sex === "female" ? cuerpo.sex : null,
-    perfil: { ...PERFIL_VACIO },
-    creadoEn: new Date().toISOString(),
-  };
+    ultimoEntranteEn: new Date().toISOString(),
+  });
 
   const db = tienda();
   await db.crearLead(lead);
-  await db.guardarMensaje({
-    id: nuevoId("msg"),
-    leadId: lead.id,
-    direccion: "entrante",
-    canal: canal === "whatsapp" ? "whatsapp" : "portal",
-    cuerpo: lead.mensajeInicial,
-    automatico: false,
-    enviadoEn: lead.creadoEn,
-  });
+  await db.guardarMensaje(
+    nuevoMensaje({
+      leadId: lead.id,
+      direccion: "entrante",
+      canal: canal === "whatsapp" ? "whatsapp" : "portal",
+      cuerpo: lead.mensajeInicial,
+      enviadoEn: lead.creadoEn,
+    }),
+  );
 
   try {
     const resultado = await gestionarLead(lead.id);

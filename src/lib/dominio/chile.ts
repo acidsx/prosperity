@@ -243,3 +243,63 @@ export function bloquesDisponibles(desde: Date, cantidad: number): Array<{ inici
 
   return bloques;
 }
+
+/**
+ * Normaliza un teléfono chileno a E.164 sin el signo +, que es el formato
+ * que espera WhatsApp ("56912345678").
+ *
+ * Acepta lo que realmente escribe la gente: "+56 9 1234 5678", "09 1234 5678",
+ * "912345678", "56912345678".
+ */
+export function normalizarTelefono(entrada: string | null | undefined): string | null {
+  if (!entrada) return null;
+  let digitos = entrada.replace(/\D/g, "");
+  if (digitos === "") return null;
+
+  // Prefijo de discado nacional: 09 1234 5678.
+  if (digitos.startsWith("0") && digitos.length === 10) digitos = digitos.slice(1);
+
+  // Ya viene con código de país.
+  if (digitos.startsWith("56") && (digitos.length === 11 || digitos.length === 10)) {
+    return digitos;
+  }
+
+  // Celular sin código de país: 9 + 8 dígitos.
+  if (digitos.length === 9 && digitos.startsWith("9")) return `56${digitos}`;
+
+  // Fijo de Santiago sin código de país: 2 + 8 dígitos.
+  if (digitos.length === 9 && digitos.startsWith("2")) return `56${digitos}`;
+
+  // Algo fuera de forma: se devuelve tal cual para no perder el dato.
+  return digitos;
+}
+
+export function mismoTelefono(uno: string | null, otro: string | null): boolean {
+  const a = normalizarTelefono(uno);
+  const b = normalizarTelefono(otro);
+  return a !== null && b !== null && a === b;
+}
+
+/** Compara correos ignorando mayúsculas y espacios. */
+export function mismoCorreo(uno: string | null, otro: string | null): boolean {
+  if (!uno || !otro) return false;
+  return uno.trim().toLowerCase() === otro.trim().toLowerCase();
+}
+
+/**
+ * Extrae la dirección de un encabezado "Nombre <correo@dominio>".
+ */
+export function correoDesdeEncabezado(encabezado: string): string | null {
+  const conNombre = encabezado.match(/<([^>]+)>/);
+  const direccion = (conNombre ? conNombre[1] : encabezado).trim().toLowerCase();
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(direccion) ? direccion : null;
+}
+
+/**
+ * Token de un alias con subdirección: "documentos+abc123@dominio" -> "abc123".
+ * Sirve para calzar una respuesta aunque llegue desde otra casilla.
+ */
+export function tokenDeAlias(direccion: string): string | null {
+  const coincidencia = direccion.match(/\+([^@]+)@/);
+  return coincidencia ? coincidencia[1] : null;
+}

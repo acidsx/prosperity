@@ -11,12 +11,14 @@ import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import type { Tienda } from "@/lib/datos/tienda";
+import { normalizarTelefono } from "@/lib/dominio/chile";
 import type {
   Actividad,
   Lead,
   Mensaje,
   Oportunidad,
   Proyecto,
+  SolicitudDocumentos,
   Visita,
 } from "@/lib/dominio/tipos";
 
@@ -100,6 +102,19 @@ export function tiendaSupabase(): Tienda | null {
       await escribir("leads", { id, datos: { ...actual, ...cambios } });
     },
 
+    async buscarLeadPorContacto({ telefono, email }) {
+      // Las columnas generadas guardan el contacto tal como lo escribió el
+      // cliente, así que el teléfono se compara normalizado en memoria.
+      if (email) {
+        const filas = await leer<Lead>("leads", { columna: "email", valor: email.toLowerCase() });
+        if (filas[0]) return filas[0];
+      }
+      if (!telefono) return null;
+      const buscado = normalizarTelefono(telefono);
+      const todos = await leer<Lead>("leads");
+      return todos.find((lead) => normalizarTelefono(lead.telefono) === buscado) ?? null;
+    },
+
     async listarOportunidades() {
       return leer<Oportunidad>("oportunidades");
     },
@@ -141,6 +156,51 @@ export function tiendaSupabase(): Tienda | null {
 
     async guardarMensaje(mensaje) {
       await escribir("mensajes", { id: mensaje.id, lead_id: mensaje.leadId, datos: mensaje });
+    },
+
+    async actualizarMensaje(id, cambios) {
+      const actual = await uno<Mensaje>("mensajes", id);
+      if (!actual) return;
+      const siguiente = { ...actual, ...cambios };
+      await escribir("mensajes", { id, lead_id: siguiente.leadId, datos: siguiente });
+    },
+
+    async mensajePorIdProveedor(idProveedor) {
+      const { data, error } = await db
+        .from("mensajes")
+        .select("id, datos")
+        .eq("id_proveedor", idProveedor)
+        .maybeSingle();
+      if (error) throw new Error(`Supabase (mensajes): ${error.message}`);
+      return data ? ((data as Fila).datos as Mensaje) : null;
+    },
+
+    async listarSolicitudes() {
+      return leer<SolicitudDocumentos>("solicitudes_documentos");
+    },
+
+    async solicitudDeLead(leadId) {
+      const filas = await leer<SolicitudDocumentos>("solicitudes_documentos", {
+        columna: "lead_id",
+        valor: leadId,
+      });
+      return filas[0] ?? null;
+    },
+
+    async solicitudPorToken(token) {
+      const filas = await leer<SolicitudDocumentos>("solicitudes_documentos", {
+        columna: "token",
+        valor: token,
+      });
+      return filas[0] ?? null;
+    },
+
+    async guardarSolicitud(solicitud) {
+      await escribir("solicitudes_documentos", {
+        id: solicitud.id,
+        lead_id: solicitud.leadId,
+        datos: solicitud,
+      });
     },
 
     async listarActividades(limite = 60) {

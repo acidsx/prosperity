@@ -7,7 +7,8 @@
  */
 
 import { COMUNAS } from "@/lib/dominio/chile";
-import { PERFIL_VACIO, type CanalLead, type Lead, type Proyecto } from "@/lib/dominio/tipos";
+import { nuevoLead } from "@/lib/dominio/fabricas";
+import type { CanalLead, Lead, Proyecto } from "@/lib/dominio/tipos";
 import type { EtapaProyecto, ModeloProyecto, TagProyecto } from "@/lib/jetbrokers/tipos";
 
 /** PRNG mulberry32: misma semilla, mismo escenario. */
@@ -199,24 +200,24 @@ export function generarLeads(cantidad: number, proyectos: Proyecto[], semilla = 
       .replace(/[̀-ͯ]/g, "")
       .replace(/\s+/g, ".");
 
-    leads.push({
-      id: `lead_${String(i + 1).padStart(3, "0")}`,
-      nombre,
-      email: `${usuario}@${elegir(azar, ["gmail.com", "outlook.cl", "hotmail.com", "uc.cl"])}`,
-      telefono: `+569${entre(azar, 10000000, 99999999)}`,
-      rut: null,
-      canal: elegir(azar, CANALES),
-      campana: azar() > 0.6 ? elegir(azar, ["meta-septiembre", "google-search-deptos", "remarketing-uf"]) : null,
-      proyectoIdInteres: proyecto?.id ?? null,
-      mensajeInicial: elegir(azar, PLANTILLAS)({ comuna, presupuesto }),
-      comunasInteres: [comuna, ...(azar() > 0.65 ? [elegir(azar, COMUNAS).nombre] : [])],
-      presupuestoUfDeclarado: azar() > 0.4 ? presupuesto : null,
-      sexo: null,
-      // El perfil financiero parte vacío a propósito: lo llena el agente
-      // leyendo el mensaje, igual que haría un ejecutivo.
-      perfil: { ...PERFIL_VACIO },
-      creadoEn: fechaRelativa(entre(azar, 0, 10)),
-    });
+    leads.push(
+      nuevoLead({
+        id: `lead_${String(i + 1).padStart(3, "0")}`,
+        nombre,
+        email: `${usuario}@${elegir(azar, ["gmail.com", "outlook.cl", "hotmail.com", "uc.cl"])}`,
+        telefono: `+569${entre(azar, 10000000, 99999999)}`,
+        canal: elegir(azar, CANALES),
+        campana: azar() > 0.6 ? elegir(azar, ["meta-septiembre", "google-search-deptos", "remarketing-uf"]) : null,
+        proyectoIdInteres: proyecto?.id ?? null,
+        mensajeInicial: elegir(azar, PLANTILLAS)({ comuna, presupuesto }),
+        comunasInteres: [comuna, ...(azar() > 0.65 ? [elegir(azar, COMUNAS).nombre] : [])],
+        presupuestoUfDeclarado: azar() > 0.4 ? presupuesto : null,
+        // El perfil financiero parte vacío a propósito: lo llena el agente
+        // leyendo el mensaje, igual que haría un ejecutivo.
+        creadoEn: fechaRelativa(entre(azar, 0, 10)),
+        ultimoEntranteEn: fechaRelativa(entre(azar, 0, 10)),
+      }),
+    );
   }
 
   return leads;

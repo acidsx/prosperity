@@ -15,7 +15,15 @@ consulta ─► extracción ─► capacidad de compra ─► calce con inventar
              (Claude)      (reglas banca CL)      (JetBrokers)           (determinista)
                                                                              │
                         CRM JetBrokers ◄── redacción + agenda ◄──────────────┘
-                         (Customer API)        (Claude)
+                         (Customer API)        (Claude)                      │
+                                                                             ▼
+                                                              WhatsApp / correo
+                                                                             │
+  ┌──────────────────────────────────────────────────────────────────────────┘
+  ▼
+respuesta del comprador ─► intención ─► confirma o reagenda la visita
+   (webhook firmado)       (Claude)   ─► recibe documentos por correo
+                                      ─► escala a una persona
 ```
 
 Solo dos pasos usan el modelo: **leer el mensaje** y **redactar la respuesta**. El
@@ -70,6 +78,80 @@ que se ve en el panel es lo que hay en el CRM.
 - No aparece autenticación más allá del `organizationId` en la URL. Si tu instancia usa
   cabecera o token, hay que agregarlo en `pedir()`.
 
+## Conversación con el comprador
+
+El agente responde por **WhatsApp** y por **correo**, y sigue la conversación:
+confirma visitas, reagenda, cancela, pide los documentos de la preaprobación y
+registra los que llegan.
+
+### La regla que define el diseño: la ventana de 24 horas
+
+WhatsApp **no permite escribir libremente a un comprador**. Pasadas 24 horas
+desde su último mensaje, Meta solo acepta **plantillas aprobadas**. Por eso:
+
+- El despachador comprueba la ventana antes de cada envío y cambia solo a la
+  plantilla equivalente cuando está cerrada.
+- A un lead que llegó de un portal y nunca escribió por WhatsApp se le responde
+  por correo, aunque tengamos su teléfono: nunca hubo ventana que abrir.
+- `src/lib/mensajeria/plantillas.ts` es el catálogo a dar de alta en el
+  WhatsApp Manager. `validarPlantilla` comprueba las reglas de formato de Meta
+  (numeración corrida de `{{1}}`, sin variables al inicio o al final, sin dos
+  seguidas, botones de hasta 20 caracteres) **antes** de mandarlas a revisión,
+  que es donde se pierden los días. La página `/mensajeria` las muestra listas
+  para copiar.
+
+### Frenos
+
+El agente es autónomo, pero acotado. Todo sale por un solo punto
+(`despachar`), de modo que los frenos no se puedan saltar desde otra parte:
+
+| Freno | Valor por defecto |
+|---|---|
+| Horario de contacto | 9:00 a 21:00, hora de Chile |
+| Mensajes automáticos por lead al día | 3 |
+| Seguimientos seguidos sin respuesta | 3, y después lo toma una persona |
+| Espaciado entre mensajes | 10 minutos |
+| Tope absoluto diario | 12, no se salta ni contestando |
+
+**Contestar no está sujeto al horario, al tope diario ni al espaciado.** Esos
+frenos existen para que el agente no insista por iniciativa propia; impedirle
+responder a alguien que acaba de escribir sería otra cosa.
+
+**Escala a una persona** —y deja de responder— ante negociación de precio,
+reclamos o temas legales, si le piden hablar con alguien, si le preguntan si es
+un bot, o ante trámites de cierre. La baja (`BAJA`, "no me escriban más") manda
+sobre todo lo demás.
+
+### Documentos
+
+El agente pide por correo los documentos que la banca chilena exige, ajustados
+a si el comprador es dependiente o independiente y a si compra en pareja. El
+correo dice **para qué sirve cada documento**, hasta cuándo se conservan y cómo
+ejercer los derechos sobre esos datos: es lo que exige la Ley 21.719, vigente
+desde el 1 de diciembre de 2026, y además es lo que hace que la gente
+efectivamente los mande.
+
+Cuando el comprador responde con los adjuntos, se registra **solo metadatos**:
+qué documento llegó, cuándo y con qué nombre de archivo. El contenido se queda
+en el proveedor de correo y se descarga bajo demanda. Nada de esto se copia al
+campo de comentarios de JetBrokers, que es visible para toda la organización.
+
+El clasificador de adjuntos es deliberadamente conservador: si el nombre del
+archivo no dice claramente qué documento es, lo deja sin clasificar para que lo
+revise una persona, en vez de dar por recibido algo que no llegó.
+
+### Webhooks
+
+| Ruta | Qué recibe |
+|---|---|
+| `GET /api/whatsapp` | Desafío de verificación de Meta |
+| `POST /api/whatsapp` | Mensajes y estados de entrega, con firma `X-Hub-Signature-256` |
+| `POST /api/correo` | Eventos de Resend, con firma Svix |
+
+Ambos verifican la firma sobre el **cuerpo crudo** antes de parsear el JSON, y
+descartan los mensajes repetidos por el id del proveedor: los dos proveedores
+reintentan, y sin eso una visita se confirmaría dos veces.
+
 ## Correr el proyecto
 
 ```bash
@@ -88,6 +170,11 @@ heurística local en vez del modelo. Cada conexión que agregues reemplaza una p
 | `ANTHROPIC_API_KEY` | Usa Claude para extraer y redactar; sin esto, heurística local |
 | `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` | Persiste en Postgres en vez de memoria |
 | `INGESTA_TOKEN` | Exige `x-ingesta-token` en las rutas de API |
+| `WHATSAPP_TOKEN` + `WHATSAPP_PHONE_NUMBER_ID` | Conecta WhatsApp; sin esto los mensajes van a la bandeja simulada |
+| `WHATSAPP_APP_SECRET` | Verifica la firma del webhook. Sin él se rechazan todos |
+| `WHATSAPP_ENVIO=true` | Habilita el envío real por WhatsApp |
+| `RESEND_API_KEY` + `CORREO_REMITENTE` | Conecta el correo |
+| `CORREO_ENVIO=true` | Habilita el envío real de correos |
 
 ### Contra un CRM simulado
 
@@ -127,9 +214,10 @@ Responde con la calificación, el mensaje redactado y los horarios propuestos.
 ```bash
 npm run dev      # desarrollo
 npm run build    # build de producción
-npm run prueba   # 35 pruebas: cliente del API, validación, finanzas, calce, estados
+npm run prueba   # 92 pruebas: API, finanzas, calce, plantillas, frenos, conversación
 npm run tipos    # typecheck
-npm run mock     # mock del API de JetBrokers
+npm run mock          # mock del API de JetBrokers
+npm run mock:whatsapp # mock de la Cloud API de WhatsApp
 ```
 
 ## Persistencia
@@ -142,11 +230,15 @@ y las consultas siguen siendo SQL normal.
 
 ## Límites conocidos
 
-- El envío del mensaje **no está conectado a WhatsApp**: se redacta y se registra en la
-  conversación, pero un humano lo despacha. Falta integrar un proveedor (Twilio, Meta
-  Cloud API) para cerrar ese tramo.
-- Las visitas quedan en estado `propuesta`: no hay confirmación del comprador ni
-  sincronización con Google Calendar.
+- **La integración de WhatsApp está escrita y probada contra un simulador, pero no
+  contra la API real**: todavía no hay una cuenta de WhatsApp Business. Falta crear el
+  WABA, verificar el número, dar de alta las plantillas del catálogo y esperar su
+  aprobación.
+- Los recordatorios de visita y de documentos pendientes están como plantillas, pero
+  falta el proceso que los dispara solo (un cron que revise la agenda cada mañana).
+- Las visitas confirmadas no se sincronizan con Google Calendar.
+- Los documentos se quedan en el proveedor de correo: no hay todavía un proceso que los
+  elimine al cumplirse el plazo informado, solo la fecha registrada.
 - El valor de la UF se lee de mindicador.cl; si falla, se usa un valor de respaldo
   (`UF_FALLBACK_CLP`) que conviene actualizar.
 - El agente no negocia precio ni emite cotizaciones formales.

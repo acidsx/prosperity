@@ -9,6 +9,7 @@ import type {
   Mensaje,
   Oportunidad,
   Proyecto,
+  SolicitudDocumentos,
   Visita,
 } from "@/lib/dominio/tipos";
 
@@ -21,6 +22,8 @@ export interface Tienda {
 
   listarLeads(): Promise<Lead[]>;
   obtenerLead(id: string): Promise<Lead | null>;
+  /** Busca por teléfono normalizado o correo, para calzar un mensaje entrante. */
+  buscarLeadPorContacto(contacto: { telefono?: string; email?: string }): Promise<Lead | null>;
   crearLead(lead: Lead): Promise<Lead>;
   actualizarLead(id: string, cambios: Partial<Lead>): Promise<void>;
 
@@ -34,6 +37,14 @@ export interface Tienda {
 
   listarMensajes(leadId?: string): Promise<Mensaje[]>;
   guardarMensaje(mensaje: Mensaje): Promise<void>;
+  actualizarMensaje(id: string, cambios: Partial<Mensaje>): Promise<void>;
+  /** Para descartar webhooks repetidos: el proveedor reintenta. */
+  mensajePorIdProveedor(idProveedor: string): Promise<Mensaje | null>;
+
+  listarSolicitudes(): Promise<SolicitudDocumentos[]>;
+  solicitudDeLead(leadId: string): Promise<SolicitudDocumentos | null>;
+  solicitudPorToken(token: string): Promise<SolicitudDocumentos | null>;
+  guardarSolicitud(solicitud: SolicitudDocumentos): Promise<void>;
 
   listarActividades(limite?: number): Promise<Actividad[]>;
   registrarActividad(actividad: Actividad): Promise<void>;

@@ -5,7 +5,9 @@ import { gestionarUno } from "@/app/acciones";
 import { BotonAccion } from "@/componentes/boton-accion";
 import { EtiquetaEstado, Tarjeta, Temperatura, Vacio } from "@/componentes/ui";
 import { tienda } from "@/lib/datos";
+import { documento } from "@/lib/documentos/catalogo";
 import { formatearClp, formatearFecha, formatearUf, valorUf } from "@/lib/dominio/chile";
+import { horasRestantesDeVentana } from "@/lib/mensajeria/politica";
 
 export const dynamic = "force-dynamic";
 
@@ -24,17 +26,19 @@ export default async function FichaLead({ params }: { params: Promise<{ id: stri
   const lead = await db.obtenerLead(id);
   if (!lead) notFound();
 
-  const [oportunidad, mensajes, visitas, actividades, uf] = await Promise.all([
+  const [oportunidad, mensajes, visitas, actividades, solicitud, uf] = await Promise.all([
     db.oportunidadDeLead(id),
     db.listarMensajes(id),
     db.listarVisitas(),
     db.listarActividades(200),
+    db.solicitudDeLead(id),
     valorUf(),
   ]);
 
   const calificacion = oportunidad?.calificacion ?? null;
   const perfil = calificacion?.perfil ?? lead.perfil;
   const visitasLead = visitas.filter((visita) => visita.leadId === id);
+  const ventana = horasRestantesDeVentana(lead);
   const actividadesLead = actividades.filter((actividad) => actividad.leadId === id);
 
   const pesos = (valor: number | null) => (valor === null ? "—" : formatearClp(valor));
@@ -61,12 +65,40 @@ export default async function FichaLead({ params }: { params: Promise<{ id: stri
         </div>
       </div>
 
+      {(lead.optOut || lead.enManosDeHumano) && (
+        <div className="space-y-2">
+          {lead.optOut && (
+            <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900">
+              Pidió no recibir más mensajes
+              {lead.optOutEn ? ` el ${formatearFecha(lead.optOutEn)}` : ""}. El agente no le escribe.
+            </p>
+          )}
+          {lead.enManosDeHumano && (
+            <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              La conversación la lleva una persona del equipo. El agente dejó de responder.
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
-          <Tarjeta titulo="Conversación">
+          <Tarjeta
+            titulo="Conversación"
+            accion={
+              <span className="text-xs text-[var(--color-tinta-suave)]">
+                {ventana === null
+                  ? "Ventana de WhatsApp cerrada: solo plantillas"
+                  : `Ventana de WhatsApp abierta por ${ventana} h`}
+              </span>
+            }
+          >
             <ul className="space-y-3">
               {mensajes
-                .sort((a, b) => a.enviadoEn.localeCompare(b.enviadoEn))
+                // WhatsApp entrega la hora con precisión de segundos, así que
+                // dos mensajes del mismo segundo empatan: el id desempata por
+                // orden de llegada.
+                .sort((a, b) => a.enviadoEn.localeCompare(b.enviadoEn) || a.id.localeCompare(b.id))
                 .map((mensaje) => (
                   <li
                     key={mensaje.id}
@@ -80,10 +112,18 @@ export default async function FichaLead({ params }: { params: Promise<{ id: stri
                       <span>
                         {mensaje.direccion === "entrante" ? lead.nombre : "Gestor"} · {mensaje.canal}
                         {mensaje.automatico ? " · automático" : ""}
+                        {mensaje.plantilla ? ` · plantilla ${mensaje.plantilla}` : ""}
                       </span>
-                      <span>{formatearFecha(mensaje.enviadoEn)}</span>
+                      <span>
+                        {formatearFecha(mensaje.enviadoEn)}
+                        {mensaje.direccion === "saliente" ? ` · ${mensaje.estado}` : ""}
+                      </span>
                     </div>
+                    {mensaje.asunto && <p className="mb-1 text-sm font-medium">{mensaje.asunto}</p>}
                     <p className="whitespace-pre-wrap">{mensaje.cuerpo}</p>
+                    {mensaje.detalleError && (
+                      <p className="mt-1 text-xs text-rose-700">{mensaje.detalleError}</p>
+                    )}
                   </li>
                 ))}
             </ul>
@@ -224,6 +264,35 @@ export default async function FichaLead({ params }: { params: Promise<{ id: stri
                     <p className="text-xs text-[var(--color-tinta-suave)]">
                       {visita.estado} · {visita.notas}
                     </p>
+                  </li>
+                ))}
+              </ul>
+            </Tarjeta>
+          )}
+
+          {solicitud && (
+            <Tarjeta titulo="Documentos para la preaprobación">
+              <p className="mb-2 text-xs text-[var(--color-tinta-suave)]">
+                Solicitados el {formatearFecha(solicitud.solicitadaEn)} · estado {solicitud.estado} ·
+                se eliminan el {formatearFecha(solicitud.eliminarDespuesDe)}
+              </p>
+              <ul className="space-y-1 text-sm">
+                {solicitud.documentos.map((pedido) => (
+                  <li key={pedido.documento} className="flex items-start gap-2">
+                    <span
+                      className={pedido.recibidoEn ? "text-green-700" : "text-[var(--color-tinta-suave)]"}
+                      aria-hidden
+                    >
+                      {pedido.recibidoEn ? "✓" : "○"}
+                    </span>
+                    <span>
+                      {documento(pedido.documento)?.nombre ?? pedido.documento}
+                      {pedido.archivo && (
+                        <span className="block text-xs text-[var(--color-tinta-suave)]">
+                          {pedido.archivo.nombre}
+                        </span>
+                      )}
+                    </span>
                   </li>
                 ))}
               </ul>

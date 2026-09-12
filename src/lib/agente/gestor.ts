@@ -27,6 +27,7 @@ import {
   formatearFecha,
   valorUf,
 } from "@/lib/dominio/chile";
+import { nuevaVisita } from "@/lib/dominio/fabricas";
 import { capacidadCompra } from "@/lib/dominio/financiamiento";
 import type {
   Actividad,
@@ -38,6 +39,7 @@ import type {
   TipoActividad,
 } from "@/lib/dominio/tipos";
 import { jetBrokersDesdeEntorno } from "@/lib/jetbrokers/cliente";
+import { canalParaRespuesta, despachar } from "@/lib/mensajeria/despachador";
 import { aClienteJetBrokers } from "@/lib/jetbrokers/mapeo";
 import { ETIQUETA_ESTADO } from "@/lib/jetbrokers/tipos";
 
@@ -254,30 +256,45 @@ export async function gestionarLead(leadId: string): Promise<ResultadoGestion> {
     );
   }
 
-  // Mensaje de respuesta.
-  await db.guardarMensaje({
-    id: nuevoId("msg"),
+  // Envío de la respuesta. Pasa por el despachador para que se apliquen los
+  // frenos y la ventana de 24 horas de WhatsApp.
+  const canalRespuesta = canalParaRespuesta(lead);
+  const despacho = await despachar({
     leadId: lead.id,
-    direccion: "saliente",
-    canal: lead.canal === "whatsapp" ? "whatsapp" : "email",
-    cuerpo: calificacion.mensajeRespuesta,
-    automatico: true,
-    enviadoEn: ahora,
+    canal: canalRespuesta,
+    salida:
+      canalRespuesta === "email"
+        ? {
+            tipo: "correo",
+            asunto: mejor
+              ? `${mejor.proyecto.nombre}, en ${mejor.proyecto.comuna}`
+              : "Sobre tu consulta",
+            html: `<p>${calificacion.mensajeRespuesta.replace(/\n/g, "<br>")}</p>`,
+            texto: calificacion.mensajeRespuesta,
+          }
+        : { tipo: "texto", cuerpo: calificacion.mensajeRespuesta },
+    // Responder una consulta recién recibida no espera al horario hábil.
+    esRespuesta: true,
   });
-  await registrar(lead.id, "mensaje_enviado", `Respuesta redactada por ${motor}`);
+
+  if (!despacho.veredicto.permitido) {
+    avisos.push(`No se envió la respuesta: ${despacho.veredicto.motivo}`);
+  } else if (despacho.resultado && !despacho.resultado.enviado) {
+    avisos.push(`Respuesta en simulación: ${despacho.resultado.motivo}`);
+  }
 
   // Visita propuesta cuando corresponde.
   if (evaluacion.siguienteAccion === "responder_y_agendar" && mejor && horarios.length > 0) {
-    await db.guardarVisita({
-      id: nuevoId("vis"),
-      leadId: lead.id,
-      proyectoId: mejor.proyecto.id,
-      inicio: horarios[0].inicio.toISOString(),
-      fin: horarios[0].fin.toISOString(),
-      estado: "propuesta",
-      notas: `Propuesta automática para ${mejor.proyecto.nombre}`,
-      creadaEn: ahora,
-    });
+    await db.guardarVisita(
+      nuevaVisita({
+        leadId: lead.id,
+        proyectoId: mejor.proyecto.id,
+        inicio: horarios[0].inicio.toISOString(),
+        fin: horarios[0].fin.toISOString(),
+        notas: `Propuesta automática para ${mejor.proyecto.nombre}`,
+        creadaEn: ahora,
+      }),
+    );
     await registrar(
       lead.id,
       "visita_propuesta",

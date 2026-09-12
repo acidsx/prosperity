@@ -205,3 +205,86 @@ para no saturar, y ofrece dos de los horarios disponibles.`,
   }
   return respuesta.parsed_output;
 }
+
+const SISTEMA_CONVERSACION = `Eres el asistente de un corredor de propiedades en Chile y respondes
+mensajes de WhatsApp de compradores con los que ya hay una conversación abierta.
+
+Cómo escribes:
+- Español de Chile, cercano y breve. Es WhatsApp: máximo 500 caracteres, sin firma.
+- Respondes lo que preguntaron, sin repetir todo el contexto.
+- Precios en UF; el monto de reserva en pesos.
+
+Lo que nunca haces:
+- No prometes que le van a aprobar el crédito ni das por hecho un dividendo: son estimaciones sujetas a la evaluación del banco.
+- No inventas precios, tipologías, disponibilidad ni beneficios: usas solo los datos que te paso.
+- No negocias precio ni ofreces descuentos. Si insisten, dices que lo revisa el ejecutivo.
+- No pides RUT, claves, liquidaciones ni documentos por WhatsApp.`;
+
+export interface ContextoConversacion {
+  lead: Lead;
+  /** Últimos mensajes, del más antiguo al más reciente. */
+  historial: Array<{ direccion: "entrante" | "saliente"; cuerpo: string }>;
+  /** Datos del proyecto sobre el que se conversa, si hay uno. */
+  proyecto: string | null;
+  /** Pregunta concreta a responder. */
+  pregunta: string;
+  valorUfClp: number;
+}
+
+/** Respuesta a una pregunta abierta dentro de una conversación en curso. */
+export async function responderConversacion(contexto: ContextoConversacion): Promise<string> {
+  const cliente = clienteClaude();
+  if (!cliente) throw new Error("No hay credenciales de Anthropic configuradas");
+
+  const respuesta = await cliente.messages.create({
+    model: MODELO,
+    max_tokens: 2000,
+    system: SISTEMA_CONVERSACION,
+    output_config: { effort: "low" },
+    messages: [
+      {
+        role: "user",
+        content: `Comprador: ${contexto.lead.nombre}
+Valor UF de hoy: ${formatearClp(contexto.valorUfClp)}
+${contexto.proyecto ? `Proyecto en conversación:\n${contexto.proyecto}` : "Todavía no hay un proyecto definido."}
+
+Conversación hasta ahora:
+${contexto.historial.map((item) => `${item.direccion === "entrante" ? "Comprador" : "Nosotros"}: ${item.cuerpo}`).join("\n")}
+
+Responde este último mensaje: "${contexto.pregunta}"`,
+      },
+    ],
+  });
+
+  const texto = respuesta.content
+    .filter((bloque): bloque is Extract<typeof bloque, { type: "text" }> => bloque.type === "text")
+    .map((bloque) => bloque.text)
+    .join("\n")
+    .trim();
+
+  if (!texto) throw new Error("El modelo no devolvió texto");
+  return texto;
+}
+
+/** Clasifica la intención de un mensaje entrante. */
+export async function clasificarIntencion(
+  lead: Lead,
+  texto: string,
+): Promise<import("@/lib/agente/intencion").LecturaIntencion> {
+  const cliente = clienteClaude();
+  if (!cliente) throw new Error("No hay credenciales de Anthropic configuradas");
+
+  const { EsquemaIntencion } = await import("@/lib/agente/intencion");
+
+  const respuesta = await cliente.messages.parse({
+    model: MODELO,
+    max_tokens: 2000,
+    system: `Clasificas mensajes de WhatsApp que llegan a un corredor de propiedades en Chile.
+Devuelves solo lo que el mensaje dice. "Sí", "dale" o "ok" después de proponerle un horario es confirma_visita.`,
+    output_config: { effort: "low", format: zodOutputFormat(EsquemaIntencion) },
+    messages: [{ role: "user", content: `Mensaje de ${lead.nombre}: "${texto}"` }],
+  });
+
+  if (!respuesta.parsed_output) throw new Error("El modelo no clasificó la intención");
+  return respuesta.parsed_output;
+}

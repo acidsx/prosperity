@@ -10,6 +10,7 @@ import { evaluar } from "../src/lib/agente/puntaje";
 import { generarProyectos } from "../src/lib/datos/generador";
 import { comisionUf, digitoVerificador, dividendoUf, rutEsValido } from "../src/lib/dominio/chile";
 import { capacidadCompra } from "../src/lib/dominio/financiamiento";
+import { nuevoLead } from "../src/lib/dominio/fabricas";
 import { PERFIL_VACIO, type Lead, type PerfilFinanciero, type Proyecto } from "../src/lib/dominio/tipos";
 import { aClienteJetBrokers } from "../src/lib/jetbrokers/mapeo";
 import { validarCliente } from "../src/lib/jetbrokers/validacion";
@@ -21,23 +22,16 @@ function perfil(cambios: Partial<PerfilFinanciero>): PerfilFinanciero {
 }
 
 function lead(cambios: Partial<Lead> = {}): Lead {
-  return {
+  return nuevoLead({
     id: "lead_001",
     nombre: "Camila Fuentes",
     email: "camila@gmail.com",
     telefono: "+56912345678",
-    rut: null,
     canal: "portal_inmobiliario",
-    campana: null,
-    proyectoIdInteres: null,
     mensajeInicial: "Hola",
     comunasInteres: ["Ñuñoa"],
-    presupuestoUfDeclarado: null,
-    sexo: null,
-    perfil: { ...PERFIL_VACIO },
-    creadoEn: new Date().toISOString(),
     ...cambios,
-  };
+  });
 }
 
 describe("utilidades chilenas", () => {

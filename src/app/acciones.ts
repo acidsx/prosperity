@@ -6,8 +6,8 @@ import { gestionarLead, gestionarPendientes } from "@/lib/agente/gestor";
 import { tienda } from "@/lib/datos";
 import { sincronizarInventario } from "@/lib/datos/inventario";
 import { tiendaMemoria } from "@/lib/datos/memoria";
-import { nuevoId } from "@/lib/datos/tienda";
-import { PERFIL_VACIO, type CanalLead, type Lead } from "@/lib/dominio/tipos";
+import { nuevoLead, nuevoMensaje } from "@/lib/dominio/fabricas";
+import type { CanalLead, Lead } from "@/lib/dominio/tipos";
 
 function refrescar() {
   for (const ruta of ["/", "/leads", "/pipeline", "/proyectos", "/agenda"]) {
@@ -46,33 +46,27 @@ export async function ingresarLead(formData: FormData): Promise<void> {
   const mensaje = String(formData.get("mensaje") ?? "").trim();
   if (!nombre || !mensaje) return;
 
-  const lead: Lead = {
-    id: nuevoId("lead"),
+  const lead: Lead = nuevoLead({
     nombre,
     email: String(formData.get("email") ?? "").trim() || null,
     telefono: String(formData.get("telefono") ?? "").trim() || null,
     rut: String(formData.get("rut") ?? "").trim() || null,
     canal: (String(formData.get("canal") ?? "sitio_web") as CanalLead) || "sitio_web",
-    campana: null,
     proyectoIdInteres: String(formData.get("proyectoId") ?? "").trim() || null,
     mensajeInicial: mensaje,
-    comunasInteres: [],
-    presupuestoUfDeclarado: null,
-    sexo: null,
-    perfil: { ...PERFIL_VACIO },
-    creadoEn: new Date().toISOString(),
-  };
+    ultimoEntranteEn: new Date().toISOString(),
+  });
 
   await tienda().crearLead(lead);
-  await tienda().guardarMensaje({
-    id: nuevoId("msg"),
-    leadId: lead.id,
-    direccion: "entrante",
-    canal: "portal",
-    cuerpo: mensaje,
-    automatico: false,
-    enviadoEn: lead.creadoEn,
-  });
+  await tienda().guardarMensaje(
+    nuevoMensaje({
+      leadId: lead.id,
+      direccion: "entrante",
+      canal: "portal",
+      cuerpo: mensaje,
+      enviadoEn: lead.creadoEn,
+    }),
+  );
   await gestionarLead(lead.id);
   refrescar();
 }

@@ -6,6 +6,8 @@
  */
 
 import { generarLeads, generarProyectos } from "@/lib/datos/generador";
+import { mismoCorreo, mismoTelefono } from "@/lib/dominio/chile";
+import { nuevoMensaje } from "@/lib/dominio/fabricas";
 import type { Tienda } from "@/lib/datos/tienda";
 import type {
   Actividad,
@@ -13,6 +15,7 @@ import type {
   Mensaje,
   Oportunidad,
   Proyecto,
+  SolicitudDocumentos,
   Visita,
 } from "@/lib/dominio/tipos";
 
@@ -23,6 +26,7 @@ interface Estado {
   visitas: Visita[];
   mensajes: Mensaje[];
   actividades: Actividad[];
+  solicitudes: SolicitudDocumentos[];
 }
 
 const CLAVE = Symbol.for("prosperity.estado");
@@ -61,15 +65,17 @@ function poblar(proyectos = 18, leads = 14, semilla = 2026): Estado {
       actualizadaEn: lead.creadoEn,
     })),
     visitas: [],
-    mensajes: consultas.map((lead, indice) => ({
-      id: `msg_${String(indice + 1).padStart(4, "0")}`,
-      leadId: lead.id,
-      direccion: "entrante" as const,
-      canal: lead.canal === "whatsapp" ? ("whatsapp" as const) : ("portal" as const),
-      cuerpo: lead.mensajeInicial,
-      automatico: false,
-      enviadoEn: lead.creadoEn,
-    })),
+    mensajes: consultas.map((lead, indice) =>
+      nuevoMensaje({
+        id: `msg_${String(indice + 1).padStart(4, "0")}`,
+        leadId: lead.id,
+        direccion: "entrante",
+        canal: lead.canal === "whatsapp" ? "whatsapp" : "portal",
+        cuerpo: lead.mensajeInicial,
+        enviadoEn: lead.creadoEn,
+      }),
+    ),
+    solicitudes: [],
     actividades: consultas.map((lead, indice) => ({
       id: `act_${String(indice + 1).padStart(4, "0")}`,
       leadId: lead.id,
@@ -116,6 +122,15 @@ export const tiendaMemoria: Tienda = {
     if (lead) Object.assign(lead, clonar(cambios));
   },
 
+  async buscarLeadPorContacto({ telefono, email }) {
+    const encontrado = estado().leads.find(
+      (lead) =>
+        (telefono !== undefined && mismoTelefono(lead.telefono, telefono)) ||
+        (email !== undefined && mismoCorreo(lead.email, email)),
+    );
+    return clonar(encontrado ?? null);
+  },
+
   async listarOportunidades() {
     return clonar(estado().oportunidades);
   },
@@ -151,6 +166,36 @@ export const tiendaMemoria: Tienda = {
 
   async guardarMensaje(mensaje) {
     estado().mensajes.push(clonar(mensaje));
+  },
+
+  async actualizarMensaje(id, cambios) {
+    const mensaje = estado().mensajes.find((item) => item.id === id);
+    if (mensaje) Object.assign(mensaje, clonar(cambios));
+  },
+
+  async mensajePorIdProveedor(idProveedor) {
+    return clonar(
+      estado().mensajes.find((mensaje) => mensaje.idProveedor === idProveedor) ?? null,
+    );
+  },
+
+  async listarSolicitudes() {
+    return clonar(estado().solicitudes);
+  },
+
+  async solicitudDeLead(leadId) {
+    return clonar(estado().solicitudes.find((item) => item.leadId === leadId) ?? null);
+  },
+
+  async solicitudPorToken(token) {
+    return clonar(estado().solicitudes.find((item) => item.token === token) ?? null);
+  },
+
+  async guardarSolicitud(solicitud) {
+    const actual = estado().solicitudes;
+    const indice = actual.findIndex((item) => item.id === solicitud.id);
+    if (indice >= 0) actual[indice] = clonar(solicitud);
+    else actual.push(clonar(solicitud));
   },
 
   async listarActividades(limite = 60) {

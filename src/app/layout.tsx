@@ -14,6 +14,7 @@ const NAVEGACION = [
   { href: "/pipeline", etiqueta: "Pipeline" },
   { href: "/proyectos", etiqueta: "Proyectos" },
   { href: "/agenda", etiqueta: "Agenda" },
+  { href: "/mensajeria", etiqueta: "Mensajería" },
 ] as const;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

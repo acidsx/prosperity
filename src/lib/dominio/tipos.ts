@@ -117,6 +117,16 @@ export interface Lead {
   sexo: Sexo | null;
   perfil: PerfilFinanciero;
   creadoEn: string;
+  /**
+   * Último mensaje entrante del comprador. Define la ventana de 24 horas de
+   * WhatsApp: fuera de ella solo se pueden enviar plantillas aprobadas.
+   */
+  ultimoEntranteEn: string | null;
+  /** El comprador pidió no recibir más mensajes. Manda sobre todo lo demás. */
+  optOut: boolean;
+  optOutEn: string | null;
+  /** Conversación tomada por una persona: el agente deja de responder. */
+  enManosDeHumano: boolean;
 }
 
 export interface ProyectoRecomendado {
@@ -184,6 +194,8 @@ export interface Oportunidad {
 
 export type CanalMensaje = "whatsapp" | "email" | "portal";
 
+export type EstadoMensaje = "encolado" | "enviado" | "entregado" | "leido" | "fallido" | "simulado";
+
 export interface Mensaje {
   id: string;
   leadId: string;
@@ -192,6 +204,14 @@ export interface Mensaje {
   cuerpo: string;
   automatico: boolean;
   enviadoEn: string;
+  /** ID del mensaje en WhatsApp o Resend, para conciliar estados y evitar duplicados. */
+  idProveedor: string | null;
+  estado: EstadoMensaje;
+  /** Nombre de la plantilla de Meta, cuando se envió fuera de la ventana de 24 h. */
+  plantilla: string | null;
+  /** Asunto, solo para correo. */
+  asunto: string | null;
+  detalleError: string | null;
 }
 
 export type EstadoVisita = "propuesta" | "confirmada" | "realizada" | "no_asistio" | "cancelada";
@@ -205,10 +225,20 @@ export interface Visita {
   estado: EstadoVisita;
   notas: string | null;
   creadaEn: string;
+  confirmadaEn: string | null;
+  /** Recordatorios ya enviados, para no repetirlos. */
+  recordatorios: number;
 }
 
 export type TipoActividad =
   | "lead_ingresado"
+  | "mensaje_recibido"
+  | "visita_confirmada"
+  | "visita_reagendada"
+  | "documentos_solicitados"
+  | "documentos_recibidos"
+  | "opt_out"
+  | "envio_bloqueado"
   | "lead_calificado"
   | "mensaje_enviado"
   | "visita_propuesta"
@@ -225,4 +255,42 @@ export interface Actividad {
   detalle: string;
   autor: "agente" | "humano";
   ocurridaEn: string;
+}
+
+/** Documento que la banca chilena pide para evaluar un crédito hipotecario. */
+export type DocumentoId =
+  | "cedula_identidad"
+  | "liquidaciones_sueldo"
+  | "certificado_afp"
+  | "certificado_antiguedad"
+  | "carpeta_tributaria"
+  | "cartola_ahorro"
+  | "certificado_matrimonio";
+
+export interface DocumentoSolicitado {
+  documento: DocumentoId;
+  recibidoEn: string | null;
+  /**
+   * Solo metadatos. El archivo queda en el proveedor de correo y se descarga
+   * bajo demanda: no se copia a la base ni al CRM.
+   */
+  archivo: {
+    nombre: string;
+    mime: string;
+    idCorreo: string;
+    idAdjunto: string;
+  } | null;
+}
+
+export interface SolicitudDocumentos {
+  id: string;
+  leadId: string;
+  /** Token del alias de respuesta, para calzar el correo entrante. */
+  token: string;
+  solicitadaEn: string;
+  documentos: DocumentoSolicitado[];
+  estado: "pendiente" | "parcial" | "completa";
+  recordatorios: number;
+  /** Fecha en que corresponde eliminar los archivos, según el plazo informado. */
+  eliminarDespuesDe: string;
 }

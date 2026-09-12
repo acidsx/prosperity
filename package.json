@@ -5,9 +5,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "prueba": "tsx --test pruebas/*.test.ts",
+    "prueba": "tsx --conditions=react-server --test pruebas/*.test.ts",
     "tipos": "tsc --noEmit",
-    "mock": "tsx mock/servidor.ts"
+    "mock": "tsx mock/servidor.ts",
+    "mock:whatsapp": "tsx mock/whatsapp.ts"
   },
   "repository": {
     "type": "git",
@@ -23,6 +24,7 @@
     "next": "^15.5.25",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "resend": "^6.28.0",
     "server-only": "^0.0.1",
     "zod": "^4.6.2"
   },
