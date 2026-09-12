@@ -4,10 +4,15 @@ import { revalidatePath } from "next/cache";
 
 import { exigirUsuario } from "@/lib/auth/acceso";
 import { simularCompradorIndeciso, type ResultadoIndeciso } from "@/lib/simulacion/indeciso";
+import {
+  simularInversionista,
+  type ResultadoInversionista,
+} from "@/lib/simulacion/inversionista";
 import { simularVenta, type ResultadoSimulacion } from "@/lib/simulacion/venta";
 
 const CLAVE = Symbol.for("prosperity.ultimaSimulacion");
 const CLAVE_INDECISO = Symbol.for("prosperity.ultimoIndeciso");
+const CLAVE_INVERSIONISTA = Symbol.for("prosperity.ultimoInversionista");
 
 function almacen(): Record<symbol, unknown> {
   return globalThis as unknown as Record<symbol, unknown>;
@@ -19,6 +24,10 @@ export async function ultimaSimulacion(): Promise<ResultadoSimulacion | null> {
 
 export async function ultimoIndeciso(): Promise<ResultadoIndeciso | null> {
   return (almacen()[CLAVE_INDECISO] as ResultadoIndeciso | undefined) ?? null;
+}
+
+export async function ultimoInversionista(): Promise<ResultadoInversionista | null> {
+  return (almacen()[CLAVE_INVERSIONISTA] as ResultadoInversionista | undefined) ?? null;
 }
 
 function revalidar(): void {
@@ -39,5 +48,12 @@ export async function correrIndeciso(): Promise<void> {
   const usuario = await exigirUsuario("/simulacion");
 
   almacen()[CLAVE_INDECISO] = await simularCompradorIndeciso({ ejecutivoId: usuario.id });
+  revalidar();
+}
+
+export async function correrInversionista(): Promise<void> {
+  const usuario = await exigirUsuario("/simulacion");
+
+  almacen()[CLAVE_INVERSIONISTA] = await simularInversionista({ ejecutivoId: usuario.id });
   revalidar();
 }

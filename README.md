@@ -272,6 +272,38 @@ documentos de la preaprobación, que es gratis y no obliga a nada. Sin reserva y
 visita forzada. En la aplicación está en `/simulacion`, con la conversación completa y
 la objeción que respondió cada mensaje.
 
+## Simular un inversionista
+
+```bash
+npm run simular -- --inversionista
+```
+
+El opuesto del comprador temeroso: no hay miedo que acompañar, hay una calculadora al
+otro lado. Rodrigo pide **cuatro departamentos para arriendo** y el agente le dimensiona
+la cartera antes de mostrarle una sola unidad.
+
+Los tres momentos que la simulación existe para mostrar:
+
+- **Pide cuatro, le alcanzan dos.** Tratándose de inversión el banco financia el 70%, no
+  el 80%: el pie por unidad sube de 20% a 30%. Y el dividendo de cada unidad cuenta como
+  deuda para el crédito de la siguiente, así que la carga financiera también frena.
+  Descubrirlo en la mesa del banco cuesta tres meses; el agente lo dice el primer día.
+- **"Se paga solo con el arriendo" es falso**, y el sistema no puede decirlo. Dividendo
+  contra arriendo neto — ya descontados vacancia, administración, contribuciones y
+  mantención — da negativo: cada departamento le cuesta plata todos los meses. El agente
+  muestra el número y después la otra mitad de la verdad, que es la amortización: parte
+  del dividendo no es gasto sino capital que pasa a su patrimonio.
+- **El descuento por volumen no lo da el agente.** Lo aprueba la inmobiliaria, así que la
+  detección de "descuento" escala sola a una persona.
+
+El modelo vive en `src/lib/dominio/inversion.ts` y el mensaje en
+`src/lib/agente/cartera.ts`. Todos los supuestos son constantes con nombre y se presentan
+como referencias de mercado, no como tasaciones: retorno bruto por arriendo, financiamiento
+por orden de propiedad, vacancia, administración, contribuciones y mantención.
+
+Termina con **dos cierres abiertos en el CRM, uno por unidad** — cada departamento tiene su
+propia escritura, su propia inscripción en el Conservador y su propia comisión.
+
 ## Cierre de la venta
 
 Desde la reserva hasta la entrega, con los hitos que tiene una compraventa chilena:
@@ -401,10 +433,11 @@ Responde con la calificación, el mensaje redactado y los horarios propuestos.
 ```bash
 npm run dev      # desarrollo
 npm run build    # build de producción
-npm run prueba   # 169 pruebas: API, finanzas, calce, frenos, conversación, objeciones, cierre
+npm run prueba   # 209 pruebas: API, finanzas, inversión, calce, frenos, conversación, objeciones, cierre
 npm run simular  # una venta completa, narrada paso a paso
 npm run simular -- --conversacion  # solo la conversación con el comprador
 npm run simular -- --indeciso      # un comprador indeciso, temeroso y lleno de dudas
+npm run simular -- --inversionista # un inversionista que quiere varios departamentos
 npm run jetbrokers -- diagnostico  # prueba la conexión con el CRM
 npm run usuarios # alta de usuarios (requiere Supabase)
 npm run tipos    # typecheck

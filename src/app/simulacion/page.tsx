@@ -2,14 +2,16 @@ import Link from "next/link";
 
 import {
   correrIndeciso,
+  correrInversionista,
   correrSimulacion,
   ultimaSimulacion,
   ultimoIndeciso,
+  ultimoInversionista,
 } from "@/app/simulacion/acciones";
 import { BotonAccion } from "@/componentes/boton-accion";
 import { Metrica, Tarjeta, Vacio } from "@/componentes/ui";
 import { exigirUsuario } from "@/lib/auth/acceso";
-import { formatearUf } from "@/lib/dominio/chile";
+import { formatearClp, formatearPorcentaje, formatearUf } from "@/lib/dominio/chile";
 import type { Voz } from "@/lib/simulacion/indeciso";
 import type { Actor } from "@/lib/simulacion/venta";
 
@@ -52,7 +54,11 @@ function fechaCorta(iso: string): string {
 
 export default async function Simulacion() {
   await exigirUsuario("/simulacion");
-  const [resultado, indeciso] = await Promise.all([ultimaSimulacion(), ultimoIndeciso()]);
+  const [resultado, indeciso, inversionista] = await Promise.all([
+    ultimaSimulacion(),
+    ultimoIndeciso(),
+    ultimoInversionista(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -74,11 +80,16 @@ export default async function Simulacion() {
               {indeciso ? "Otro comprador indeciso" : "Simular un comprador indeciso"}
             </BotonAccion>
           </form>
+          <form action={correrInversionista}>
+            <BotonAccion variante="secundario">
+              {inversionista ? "Otro inversionista" : "Simular un inversionista"}
+            </BotonAccion>
+          </form>
         </div>
       </div>
 
       {!resultado ? (
-        indeciso ? null : (
+        indeciso || inversionista ? null : (
           <Tarjeta>
             <Vacio mensaje="Todavía no has corrido ninguna simulación." />
           </Tarjeta>
@@ -154,6 +165,158 @@ export default async function Simulacion() {
       )}
 
       {indeciso ? <ConversacionIndecisa resultado={indeciso} /> : null}
+      {inversionista ? <CarteraDeInversion resultado={inversionista} /> : null}
+    </div>
+  );
+}
+
+/**
+ * El inversionista: cuántas unidades le alcanzan de verdad y qué le cuestan
+ * al mes. El flujo negativo se muestra en rojo a propósito — es el número
+ * que decide la compra y el que nunca aparece en un folleto.
+ */
+function CarteraDeInversion({
+  resultado,
+}: {
+  resultado: NonNullable<Awaited<ReturnType<typeof ultimoInversionista>>>;
+}) {
+  const { turnos, resumen } = resultado;
+  const negativo = resumen.flujoMensualTotalClp < 0;
+
+  const FRENO: Record<string, string> = {
+    pie: "el pie por unidad",
+    renta: "la carga financiera",
+    ambas: "el pie y la carga financiera",
+    ninguna: "nada: le alcanzan todas",
+    sin_datos: "faltan datos",
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-lg font-semibold tracking-tight">
+          Un inversionista que quiere varios departamentos
+        </h2>
+        <p className="mt-1 text-sm text-[var(--color-tinta-suave)]">
+          {resumen.comprador} pide {resumen.unidadesPedidas} unidades para arriendo. El agente
+          dimensiona la cartera antes de mostrarle nada: cuántas le dan, qué las frena y qué le
+          cuestan al mes. Los cálculos salen de <code>planificarCartera</code>, el mismo código que
+          correría en producción.
+        </p>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Metrica
+          etiqueta="Pide / le alcanzan"
+          valor={`${resumen.unidadesPedidas} → ${resumen.unidadesFinanciables}`}
+          detalle={`Frena: ${FRENO[resumen.restriccion] ?? resumen.restriccion}`}
+        />
+        <Metrica
+          etiqueta="Pie requerido"
+          valor={formatearUf(resumen.pieRequeridoUf)}
+          detalle={`de ${formatearUf(resumen.pieDisponibleUf)} disponibles`}
+        />
+        <Metrica
+          etiqueta={negativo ? "Le cuesta al mes" : "Le queda al mes"}
+          valor={formatearClp(Math.abs(resumen.flujoMensualTotalClp))}
+          detalle={`de eso, ${formatearClp(resumen.amortizacionTotalClp)} es patrimonio`}
+        />
+        <Metrica
+          etiqueta="Rentabilidad"
+          valor={formatearPorcentaje(resumen.rentabilidadNeta)}
+          detalle={`neta · ${formatearPorcentaje(resumen.rentabilidadBruta)} bruta`}
+        />
+      </div>
+
+      <Tarjeta titulo="La cuenta del mes, por la cartera completa">
+        <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-[var(--color-tinta-suave)]">
+              Dividendo
+            </dt>
+            <dd className="tabular-nums">{formatearClp(resumen.dividendoTotalClp)}</dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-[var(--color-tinta-suave)]">
+              Arriendo neto
+            </dt>
+            <dd className="tabular-nums">{formatearClp(resumen.arriendoNetoTotalClp)}</dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-[var(--color-tinta-suave)]">
+              Flujo
+            </dt>
+            <dd className={`tabular-nums font-medium ${negativo ? "text-rose-700" : "text-green-800"}`}>
+              {negativo ? "−" : "+"}
+              {formatearClp(Math.abs(resumen.flujoMensualTotalClp))}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-[var(--color-tinta-suave)]">
+              Amortización
+            </dt>
+            <dd className="tabular-nums text-green-800">
+              +{formatearClp(resumen.amortizacionTotalClp)}
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-3 text-sm text-[var(--color-tinta-suave)]">{resumen.desenlace}</p>
+      </Tarjeta>
+
+      <Tarjeta titulo="La conversación completa">
+        <ol className="space-y-4">
+          {turnos.map((turno, indice) => (
+            <li key={indice} className={turno.voz === "comprador" ? "" : "sm:pl-10"}>
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span
+                  className={`rounded-full px-2 py-0.5 font-medium ${
+                    turno.voz === "comprador"
+                      ? "bg-slate-100 text-slate-700"
+                      : turno.voz === "agente"
+                        ? "bg-green-100 text-green-900"
+                        : turno.voz === "ejecutivo"
+                          ? "bg-blue-100 text-blue-900"
+                          : "bg-rose-100 text-rose-900"
+                  }`}
+                >
+                  {ETIQUETA_VOZ[turno.voz]}
+                </span>
+                <span className="text-[var(--color-tinta-suave)]">
+                  día {turno.dia} · {fechaCorta(turno.fecha)}
+                  {turno.canal ? ` · ${turno.canal}` : ""}
+                </span>
+                {turno.etiquetaObjecion ? (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-900">
+                    {turno.etiquetaObjecion}
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-1 whitespace-pre-wrap text-sm">{turno.texto}</p>
+              {turno.nota ? (
+                <p className="mt-1 text-xs text-[var(--color-tinta-suave)]">{turno.nota}</p>
+              ) : null}
+            </li>
+          ))}
+        </ol>
+      </Tarjeta>
+
+      <div className="flex flex-wrap gap-2 text-sm">
+        <Link
+          href={`/leads/${resumen.leadId}`}
+          className="rounded-md border border-[var(--color-borde)] bg-white px-3 py-1.5 hover:bg-[var(--color-lienzo)]"
+        >
+          Ver la ficha de {resumen.comprador.split(" ")[0]}
+        </Link>
+        {resumen.negocioIds.map((negocioId, indice) => (
+          <Link
+            key={negocioId}
+            href={`/negocios/${negocioId}`}
+            className="rounded-md border border-[var(--color-borde)] bg-white px-3 py-1.5 hover:bg-[var(--color-lienzo)]"
+          >
+            Cierre de la unidad {indice + 1}
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

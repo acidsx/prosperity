@@ -66,7 +66,11 @@ export function extraerPerfilHeuristico(lead: Lead): Extraccion {
   const dormitorios = texto.match(/(\d)\s?[dD](?:orm)?\b/);
   const banos = texto.match(/(\d)\s?[bB](?:a[ñn]o)?\b/);
 
-  const paraInvertir = /invers|arrend|airbnb|plusval|renta(?:bilidad)?/i.test(plano);
+  // "arriendo" no lo cubría "arrend": en Chile el sustantivo lleva i
+  // ("compro para arriendo") y es la forma más común de decirlo.
+  // "renta" a secas tampoco sirve: casi siempre es su renta líquida, no la
+  // del negocio, así que solo cuentan "rentabilidad" y "rentar".
+  const paraInvertir = /invers|arrend|arriend|airbnb|plusval|rentabilidad|rentar\b/i.test(plano);
   const pagaContado = /al contado|pago contado|sin cr[ée]dito|efectivo/i.test(plano);
   const paraVivir = /vivir|primera vivienda|mi familia|mi señora|mi esposa|mi pareja/i.test(plano);
 

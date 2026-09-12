@@ -13,6 +13,10 @@ import {
   simularCompradorIndeciso,
   type ResultadoIndeciso,
 } from "../src/lib/simulacion/indeciso";
+import {
+  simularInversionista,
+  type ResultadoInversionista,
+} from "../src/lib/simulacion/inversionista";
 import { simularVenta, type ResultadoSimulacion } from "../src/lib/simulacion/venta";
 
 describe("simulación de una venta completa", () => {
@@ -286,5 +290,105 @@ describe("el comprador indeciso y temeroso", () => {
       negocios.filter((negocio) => negocio.leadId === resultado.resumen.leadId).length,
       0,
     );
+  });
+});
+
+describe("el inversionista que quiere varios departamentos", () => {
+  let resultado: ResultadoInversionista;
+
+  before(async () => {
+    await tiendaMemoria.reiniciar({ proyectos: 8, leads: 2, semilla: 3117 });
+    resultado = await simularInversionista();
+  });
+
+  it("le ajusta la expectativa: pide más de lo que le alcanza", () => {
+    assert.equal(resultado.resumen.unidadesPedidas, 4);
+    assert.ok(
+      resultado.resumen.unidadesFinanciables < resultado.resumen.unidadesPedidas,
+      "con este perfil no debería alcanzarle para las cuatro",
+    );
+    assert.notEqual(resultado.resumen.restriccion, "ninguna");
+
+    // Y se lo dice en el primer mensaje, no después de tres visitas.
+    const plan = resultado.turnos.find(
+      (turno) => turno.voz === "agente" && /los números dan para/.test(turno.texto),
+    );
+    assert.ok(plan, "no mandó el plan de cartera");
+    assert.equal(plan!.dia, 0);
+  });
+
+  it("no reserva más pie ni más dividendo del que tiene", () => {
+    assert.ok(resultado.resumen.pieRequeridoUf <= resultado.resumen.pieDisponibleUf);
+    assert.ok(resultado.resumen.dividendoTotalClp > 0);
+  });
+
+  it("dice que el arriendo no paga el dividendo, y lo cuantifica", () => {
+    assert.ok(resultado.resumen.flujoMensualTotalClp < 0, "el escenario dejó de tener flujo negativo");
+
+    const respuesta = resultado.turnos.find((turno) => turno.objecion === "se_paga_solo");
+    assert.ok(respuesta, "no respondió la objeción de que se paga solo");
+    assert.match(respuesta!.texto, /^No, /);
+    assert.match(respuesta!.texto, /de tu bolsillo cada mes/i);
+  });
+
+  it("muestra la amortización además del flujo: el retorno no es solo caja", () => {
+    assert.ok(resultado.resumen.amortizacionTotalClp > 0);
+    const delAgente = resultado.turnos.filter((turno) => turno.voz === "agente");
+    assert.ok(
+      delAgente.some((turno) => /capital que pasa a ser tuyo/i.test(turno.texto)),
+      "nunca explicó que parte del dividendo es patrimonio",
+    );
+  });
+
+  it("publica la rentabilidad neta, no solo la bruta", () => {
+    assert.ok(resultado.resumen.rentabilidadNeta > 0);
+    assert.ok(resultado.resumen.rentabilidadNeta < resultado.resumen.rentabilidadBruta);
+
+    const respuesta = resultado.turnos.find((turno) => turno.objecion === "rentabilidad");
+    assert.ok(respuesta);
+    assert.match(respuesta!.texto, /Neta:/);
+  });
+
+  it("el descuento por volumen lo toma una persona, no el agente", () => {
+    assert.ok(resultado.resumen.escalamientos >= 1, "no escaló la negociación de precio");
+    assert.ok(resultado.turnos.some((turno) => turno.voz === "ejecutivo"));
+
+    const delAgente = resultado.turnos
+      .filter((turno) => turno.voz === "agente")
+      .map((turno) => turno.texto)
+      .join("\n");
+    assert.doesNotMatch(delAgente, /te hago un descuento|te dejo (en|a) UF|te rebajo/i);
+  });
+
+  it("nunca promete arriendo asegurado ni retorno garantizado", () => {
+    const delAgente = resultado.turnos
+      .filter((turno) => turno.voz === "agente")
+      .map((turno) => turno.texto)
+      .join("\n");
+
+    assert.doesNotMatch(
+      delAgente,
+      /rentabilidad (asegurada|garantizada)|arriendo garantizado|retorno seguro|se arrienda solo/i,
+    );
+    assert.doesNotMatch(delAgente, /se pagan? sol[oa]s? con el arriendo/i);
+  });
+
+  it("abre un cierre por unidad: cada una escritura e inscribe por separado", async () => {
+    assert.equal(resultado.resumen.negocioIds.length, resultado.resumen.unidadesFinanciables);
+
+    const negocios = await tiendaMemoria.listarNegocios();
+    const suyos = negocios.filter((negocio) => negocio.leadId === resultado.resumen.leadId);
+    assert.equal(suyos.length, resultado.resumen.unidadesFinanciables);
+    assert.ok(suyos.every((negocio) => negocio.etapa !== "cerrado"));
+
+    // Unidades distintas: no son el mismo departamento duplicado.
+    const unidades = new Set(suyos.map((negocio) => negocio.unidad));
+    assert.equal(unidades.size, suyos.length);
+  });
+
+  it("la conversación va en orden y sin mensajes del futuro", () => {
+    const fechas = resultado.turnos.map((turno) => new Date(turno.fecha).getTime());
+    assert.deepEqual([...fechas].sort((a, b) => a - b), fechas);
+    assert.ok(fechas.every((fecha) => fecha <= Date.now()));
   });
 });

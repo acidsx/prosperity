@@ -18,8 +18,21 @@
  *  - Nunca se promete la aprobación del crédito: la decide el banco.
  */
 
-import { dividendoUf, formatearClp, formatearUf, PIE_MINIMO } from "@/lib/dominio/chile";
+import {
+  dividendoUf,
+  formatearClp,
+  formatearPorcentaje,
+  formatearUf,
+  PIE_MINIMO,
+} from "@/lib/dominio/chile";
 import type { CapacidadCompra } from "@/lib/dominio/financiamiento";
+import {
+  arriendoDeMercadoClp,
+  CONTRIBUCIONES_ANUAL,
+  economiaUnidad,
+  FINANCIAMIENTO_INVERSION,
+  VACANCIA_ANUAL,
+} from "@/lib/dominio/inversion";
 
 export type TipoObjecion =
   | "precio_alto"
@@ -31,7 +44,12 @@ export type TipoObjecion =
   | "desconfianza"
   | "gastos_comunes"
   | "prefiere_pensarlo"
-  | "pie_insuficiente";
+  | "pie_insuficiente"
+  // Las que trae un inversionista: no tiene miedo, tiene calculadora.
+  | "rentabilidad"
+  | "se_paga_solo"
+  | "vacancia"
+  | "contribuciones";
 
 export const ETIQUETA_OBJECION: Record<TipoObjecion, string> = {
   precio_alto: "Le parece caro",
@@ -44,10 +62,20 @@ export const ETIQUETA_OBJECION: Record<TipoObjecion, string> = {
   gastos_comunes: "Gastos comunes altos",
   prefiere_pensarlo: "Quiere pensarlo",
   pie_insuficiente: "No le alcanza el pie",
+  rentabilidad: "Pregunta por la rentabilidad",
+  se_paga_solo: "Cree que se paga solo",
+  vacancia: "¿Y si no lo arriendo?",
+  contribuciones: "Pregunta por las contribuciones",
 };
 
 /** Señales con que aparece cada objeción en un mensaje real. */
 const SENALES: Array<{ tipo: TipoObjecion; patron: RegExp }> = [
+  // Las del inversionista van primero: su lenguaje es específico y no se
+  // confunde con el del comprador que va a vivir ahí.
+  { tipo: "se_paga_solo", patron: /\b(se pagan? sol[oa]s?|el arriendo (cubre|paga|me paga)|con el arriendo (lo |la )?(pago|cubro)|se financia sol)\b/i },
+  { tipo: "vacancia", patron: /\b(si no lo arriendo|si no la arriendo|no encuentro arrendatario|queda vac[íi]o|quedan vac[íi]os|vacancia|sin arrendatario|meses vac[íi]o)\b/i },
+  { tipo: "contribuciones", patron: /\b(contribuciones|impuesto territorial|aval[úu]o fiscal|sobretasa)\b/i },
+  { tipo: "rentabilidad", patron: /\b(rentabilidad|cu[áa]nto renta|cu[áa]nto (me )?deja|retorno|cap rate|plusval[íi]a|rinde)\b/i },
   { tipo: "precio_alto", patron: /\b(muy caro|caro|carisimo|se me va|no me alcanza|fuera de mi presupuesto|alto el precio)\b/i },
   { tipo: "miedo_deuda", patron: /\b(miedo|me asusta|endeudar|endeudarme|amarrar|atar|25 a[ñn]os|30 a[ñn]os|toda la vida|mucho tiempo)\b/i },
   { tipo: "miedo_cesantia", patron: /\b(pierdo (la |el )?(pega|trabajo|empleo)|me despiden|quedo cesante|sin trabajo|estabilidad laboral)\b/i },
@@ -57,7 +85,7 @@ const SENALES: Array<{ tipo: TipoObjecion; patron: RegExp }> = [
   { tipo: "desconfianza", patron: /\b(estafa|confiar|es serio|son serios|c[óo]mo s[ée] que|me da desconfianza|garant[íi]a de que)\b/i },
   { tipo: "gastos_comunes", patron: /\b(gastos comunes|gg\.?cc|mantenci[óo]n del edificio)\b/i },
   { tipo: "prefiere_pensarlo", patron: /\b(lo voy a pensar|dejame pensarlo|necesito pensar|converso con|consultarlo con|lo hablo con)\b/i },
-  { tipo: "pie_insuficiente", patron: /\b(no tengo (el )?pie|me falta (el )?pie|ahorro poco|no alcanzo a juntar|pie muy alto)\b/i },
+  { tipo: "pie_insuficiente", patron: /\b(no tengo (el )?pie|me falta (el )?pie|ahorro poco|no alcanzo a juntar|pie muy alto|el pie es tan alto|por qu[ée] tanto pie|pie (del? )?30|sube el pie)\b/i },
 ];
 
 export function detectarObjecion(texto: string): TipoObjecion | null {
@@ -80,6 +108,10 @@ export interface ContextoObjecion {
   /** Cuántas veces ya se abordó esta misma objeción. */
   vecesTratada: number;
   nombreCorredora: string;
+  /** Compra para arrendar: cambia el financiamiento y lo que hay que decirle. */
+  paraInvertir?: boolean;
+  /** Cuántas unidades trae en mente, si lo dijo. */
+  unidadesDeseadas?: number;
 }
 
 export interface RespuestaObjecion {
@@ -99,7 +131,7 @@ export interface RespuestaObjecion {
  * una referencia, no una tasación: se presenta como tal.
  */
 export function arriendoEstimadoClp(precioUf: number, valorUfClp: number): number {
-  return Math.round((precioUf * valorUfClp * 0.045) / 12 / 10_000) * 10_000;
+  return arriendoDeMercadoClp(precioUf, valorUfClp);
 }
 
 export function responderObjecion(
@@ -270,8 +302,29 @@ function respuestaInicial(
       };
 
     case "pie_insuficiente": {
+      // Para inversión el banco financia menos: el pie por unidad sube de
+      // 20% a 30%, y eso es lo que suele frenar una cartera.
+      const fraccionPie = contexto.paraInvertir ? 1 - FINANCIAMIENTO_INVERSION : PIE_MINIMO;
       const pieNecesario =
-        precioUf !== null ? formatearClp(precioUf * PIE_MINIMO * valorUfClp) : "el 20% del precio";
+        precioUf !== null
+          ? formatearClp(precioUf * fraccionPie * valorUfClp)
+          : `el ${Math.round(fraccionPie * 100)}% del precio`;
+
+      if (contexto.paraInvertir) {
+        return {
+          texto: [
+            `Acá está la diferencia que más sorprende, ${primerNombre}: en primera vivienda el banco financia el 80%, pero tratándose de inversión baja al ${Math.round(FINANCIAMIENTO_INVERSION * 100)}%.`,
+            `Por unidad eso significa ${Math.round(fraccionPie * 100)}% de pie en vez de 20%: ${pieNecesario} por departamento. Multiplicado por las unidades que quieres, es lo que define cuántas salen.`,
+            capacidad.pieUf > 0
+              ? `Con ${formatearUf(capacidad.pieUf)} de ahorro conviene decidir entre menos unidades ahora o juntar el pie de las que faltan.`
+              : `Conviene fijar el pie disponible antes de elegir unidades.`,
+          ].join(" "),
+          siguientePaso: "¿Prefieres partir con menos unidades o esperar a juntar el pie completo?",
+          seDetiene: false,
+          escala: false,
+        };
+      }
+
       return {
         texto: [
           `Te cuento cómo funciona, ${primerNombre}: los bancos financian hasta el 80%, así que para esta unidad necesitarías cerca de ${pieNecesario} de pie.`,
@@ -281,6 +334,108 @@ function respuestaInicial(
           `Si postulas a subsidio, ese monto se suma al pie.`,
         ].join(" "),
         siguientePaso: "¿Te busco proyectos con facilidades de pie o con subsidio?",
+        seDetiene: false,
+        escala: false,
+      };
+    }
+
+    // ------------------------------------------------- el inversionista
+
+    case "rentabilidad": {
+      if (precioUf === null) {
+        return {
+          texto: `Para darte la rentabilidad necesito el precio de la unidad concreta, ${primerNombre}. Dime cuál miras y te mando el cálculo completo: bruta, neta y flujo mensual.`,
+          siguientePaso: "¿Qué tipología estás mirando?",
+          seDetiene: false,
+          escala: false,
+        };
+      }
+      const unidad = economiaUnidad(precioUf, valorUfClp, contexto.paraInvertir ? 2 : 1, {
+        gastosComunesClp: contexto.gastosComunesClp ?? undefined,
+      });
+      return {
+        texto: [
+          `Te doy los dos números, ${primerNombre}, porque el que se publica es solo el primero.`,
+          `Bruta: ${formatearPorcentaje(unidad.rentabilidadBrutaAnual)} anual — el arriendo de mercado, ${formatearClp(unidad.arriendoBrutoClp)} al mes, sobre el precio.`,
+          `Neta: ${formatearPorcentaje(unidad.rentabilidadNetaAnual)} anual — la misma cuenta descontando un mes de vacancia al año, la administración del arriendo, las contribuciones y la mantención. Quedan ${formatearClp(unidad.arriendoNetoClp)} al mes.`,
+          `Esa diferencia entre ${formatearPorcentaje(unidad.rentabilidadBrutaAnual)} y ${formatearPorcentaje(unidad.rentabilidadNetaAnual)} es la que casi nunca aparece en el aviso. Son estimaciones de mercado, no una tasación.`,
+        ].join("\n\n"),
+        siguientePaso: "¿Te armo el flujo a 10 años con amortización y plusvalía?",
+        seDetiene: false,
+        escala: false,
+      };
+    }
+
+    case "se_paga_solo": {
+      if (precioUf === null) {
+        return {
+          texto: `Depende del precio y de cuánto pie pongas, ${primerNombre}, así que no te voy a decir que sí de entrada. Dime qué unidad miras y te muestro el flujo real.`,
+          siguientePaso: "¿Cuál estás mirando?",
+          seDetiene: false,
+          escala: false,
+        };
+      }
+      const unidad = economiaUnidad(precioUf, valorUfClp, contexto.paraInvertir ? 2 : 1, {
+        gastosComunesClp: contexto.gastosComunesClp ?? undefined,
+      });
+      const cubre = unidad.flujoMensualClp >= 0;
+      return {
+        texto: [
+          cubre
+            ? `En este caso sí alcanza, ${primerNombre}, pero te muestro la cuenta igual para que la veas completa:`
+            : `No, ${primerNombre}. Te lo digo derecho porque es lo que más se promete en este rubro y casi nunca es verdad:`,
+          `Dividendo ${formatearClp(unidad.dividendoClp)} al mes contra un arriendo neto de ${formatearClp(unidad.arriendoNetoClp)}. ${
+            cubre
+              ? `Te quedan ${formatearClp(unidad.flujoMensualClp)} a favor.`
+              : `Te cuesta ${formatearClp(Math.abs(unidad.flujoMensualClp))} de tu bolsillo cada mes.`
+          }`,
+          `Ahora, lo que también hay que decir: de ese dividendo, ${formatearClp(unidad.amortizacionClp)} no son gasto, son capital que pasa a ser tuyo; el resto, ${formatearClp(unidad.interesClp)}, es el interés que se lleva el banco. Mirado así, el costo real del mes es ${formatearClp(Math.abs(unidad.costoRealMensualClp))} y el resto es ahorro forzado.`,
+          `El negocio está en la amortización y en la plusvalía, no en el flujo. Si necesitas que el flujo sea positivo desde el mes uno, hay que poner más pie o buscar otro precio.`,
+        ].join("\n\n"),
+        siguientePaso: "¿Te calculo cuánto pie haría falta para que el flujo quede en cero?",
+        seDetiene: false,
+        escala: false,
+      };
+    }
+
+    case "vacancia": {
+      const arriendo = precioUf !== null ? arriendoDeMercadoClp(precioUf, valorUfClp) : null;
+      const mesesBase = Math.round(VACANCIA_ANUAL * 12);
+      // La caída se calcula y se dice de cuánto a cuánto: "baja 0,7%" se
+      // presta para leerlo como una baja relativa, que no es lo que pasa.
+      const neta = precioUf !== null ? economiaUnidad(precioUf, valorUfClp, 2).rentabilidadNetaAnual : null;
+      const netaConVacancia =
+        precioUf !== null
+          ? economiaUnidad(precioUf, valorUfClp, 2, { vacanciaAnual: 3 / 12 }).rentabilidadNetaAnual
+          : null;
+      return {
+        texto: [
+          `Es el riesgo principal del negocio, ${primerNombre}, y ya está metido en los números que te di: el cálculo asume ${mesesBase} mes vacío al año.`,
+          arriendo
+            ? `Cada mes sin arrendar te cuesta ${formatearClp(arriendo)} de arriendo que no entra, más los gastos comunes que en ese mes los paga el dueño.`
+            : `Cada mes sin arrendar es arriendo que no entra y gastos comunes que paga el dueño.`,
+          `Lo que reduce la vacancia es concreto: ubicación cerca de metro, tipologías chicas que es lo que más se mueve, y precio de arriendo a mercado en vez de un 10% arriba esperando suerte.`,
+          neta !== null && netaConVacancia !== null
+            ? `Si te quedara vacío tres meses en vez de uno, la rentabilidad neta pasa de ${formatearPorcentaje(neta)} a ${formatearPorcentaje(netaConVacancia)}. No es una catástrofe, pero hay que poder aguantar el dividendo esos meses.`
+            : `Lo que hay que poder aguantar es el dividendo en los meses sin arrendatario.`,,
+        ].join(" "),
+        siguientePaso: "¿Te muestro la vacancia real del sector en los últimos arriendos que gestionamos?",
+        seDetiene: false,
+        escala: false,
+      };
+    }
+
+    case "contribuciones": {
+      const anual = precioUf !== null ? precioUf * valorUfClp * CONTRIBUCIONES_ANUAL : null;
+      return {
+        texto: [
+          `Las paga el dueño, ${primerNombre}, no el arrendatario: es un costo tuyo todo el año, se arriende o no.`,
+          anual
+            ? `Para una unidad de este precio andan por ${formatearClp(anual / 12)} al mes aproximado, en cuatro cuotas al año. Ya están descontadas en la rentabilidad neta que te pasé.`
+            : `Se pagan en cuatro cuotas al año y están descontadas en la rentabilidad neta que te pasé.`,
+          `Se calculan sobre el avalúo fiscal, que va bastante por debajo del precio comercial, así que el monto exacto sale del rol una vez asignado: bajo el avalúo exento no se paga nada, y si la unidad califica como DFL2 paga menos.`,
+        ].join(" "),
+        siguientePaso: "¿Te averiguo el avalúo y la contribución exacta de la unidad?",
         seDetiene: false,
         escala: false,
       };
@@ -308,4 +463,7 @@ export const LIMITES_DE_PERSUASION = [
   "No minimizar los riesgos: si preguntan qué pasa si pierden el trabajo, la respuesta parte por reconocer que el riesgo existe.",
   "No hablar mal de la competencia.",
   "Si pide espacio o dice que lo va a pensar, dárselo.",
+  "Nunca decir que una propiedad 'se paga sola' sin mostrar el flujo: dividendo contra arriendo neto, con la vacancia y los costos del dueño descontados.",
+  "Publicar la rentabilidad neta junto a la bruta, no la bruta sola.",
+  "Un descuento por volumen lo aprueba la inmobiliaria, no el agente: se deriva, no se promete.",
 ] as const;

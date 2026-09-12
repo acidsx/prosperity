@@ -4,6 +4,7 @@
  *   npm run simular                    la venta completa, de la consulta a la entrega
  *   npm run simular -- --conversacion  solo la conversación con el comprador
  *   npm run simular -- --indeciso      un comprador indeciso, temeroso y lleno de dudas
+ *   npm run simular -- --inversionista un inversionista que quiere varios departamentos
  *
  * Corre contra la tienda en memoria, así que no toca nada real. Si además
  * defines JETBROKERS_BASE_URL apuntando al simulador, el inventario sale de
@@ -11,8 +12,14 @@
  */
 
 import { tienda } from "../src/lib/datos";
-import { formatearFecha, formatearUf } from "../src/lib/dominio/chile";
+import {
+  formatearClp,
+  formatearFecha,
+  formatearPorcentaje,
+  formatearUf,
+} from "../src/lib/dominio/chile";
 import { simularCompradorIndeciso, type Voz } from "../src/lib/simulacion/indeciso";
+import { simularInversionista } from "../src/lib/simulacion/inversionista";
 import { simularVenta, type Actor } from "../src/lib/simulacion/venta";
 
 const ETIQUETA: Record<Actor, string> = {
@@ -111,8 +118,65 @@ async function mostrarIndeciso() {
   console.log("  crédito y, cuando la unidad quedó sobre lo que el banco le presta, lo dijo.\n");
 }
 
+/** Narra la conversación con el inversionista. */
+async function mostrarInversionista() {
+  const { turnos, resumen } = await simularInversionista();
+
+  console.log("\nUN INVERSIONISTA QUE QUIERE VARIOS DEPARTAMENTOS");
+  console.log("=".repeat(78));
+  console.log(
+    `${resumen.comprador} · ${resumen.proyecto}${resumen.modelo ? ` · ${resumen.modelo}` : ""} · ${formatearUf(resumen.precioUnitarioUf)} por unidad`,
+  );
+  console.log(
+    `Pide ${resumen.unidadesPedidas} · le alcanzan ${resumen.unidadesFinanciables} · lo frena: ${resumen.restriccion}`,
+  );
+
+  let ultimoDia = -1;
+  for (const turno of turnos) {
+    if (turno.dia !== ultimoDia) {
+      console.log(`\n${"-".repeat(78)}`);
+      console.log(`día ${String(turno.dia).padStart(3)} · ${fechaCorta(turno.fecha)}`);
+      ultimoDia = turno.dia;
+    }
+    const sello = [turno.canal, turno.etiquetaObjecion].filter(Boolean).join(" · ");
+    console.log(`\n[${ETIQUETA_VOZ[turno.voz]}]${sello ? ` ${sello}` : ""}`);
+    for (const linea of turno.texto.split("\n")) console.log(`  ${linea}`);
+    if (turno.nota) console.log(`  → ${turno.nota}`);
+  }
+
+  console.log("\n" + "=".repeat(78));
+  console.log("LA CARTERA, EN NÚMEROS");
+  console.log(`  Unidades pedidas          ${resumen.unidadesPedidas}`);
+  console.log(`  Unidades financiables     ${resumen.unidadesFinanciables}  (frena: ${resumen.restriccion})`);
+  console.log(`  Pie requerido             ${formatearUf(resumen.pieRequeridoUf)} de ${formatearUf(resumen.pieDisponibleUf)} disponibles`);
+  console.log(`  Dividendo total           ${formatearClp(resumen.dividendoTotalClp)} al mes`);
+  console.log(`  Arriendo neto total       ${formatearClp(resumen.arriendoNetoTotalClp)} al mes`);
+  console.log(`  Flujo mensual             ${formatearClp(resumen.flujoMensualTotalClp)}  ${resumen.flujoMensualTotalClp < 0 ? "(sale de su bolsillo)" : "(a favor)"}`);
+  console.log(`  De eso, amortización      ${formatearClp(resumen.amortizacionTotalClp)}  (pasa a ser patrimonio)`);
+  console.log(
+    `  Rentabilidad              ${formatearPorcentaje(resumen.rentabilidadBruta)} bruta · ${formatearPorcentaje(resumen.rentabilidadNeta)} neta`,
+  );
+
+  console.log("\nOBJECIONES QUE APARECIERON");
+  for (const objecion of resumen.objeciones) {
+    console.log(`  ${objecion.etiqueta.padEnd(30)} ${objecion.intentos}`);
+  }
+
+  console.log("\nRESULTADO");
+  console.log(`  Mensajes del agente    ${resumen.mensajesDelAgente}`);
+  console.log(`  Pasó a una persona     ${resumen.escalamientos}`);
+  console.log(`  Cierres abiertos       ${resumen.negocioIds.length}`);
+  console.log(`\n  ${resumen.desenlace}`);
+  console.log(`\n  Lead ${resumen.leadId}\n`);
+}
+
 async function principal() {
   const soloConversacion = process.argv.includes("--conversacion");
+
+  if (process.argv.includes("--inversionista")) {
+    await mostrarInversionista();
+    return;
+  }
 
   if (process.argv.includes("--indeciso")) {
     await mostrarIndeciso();
@@ -158,7 +222,8 @@ async function principal() {
   console.log("  agente con el mismo código que corre en producción. El banco, la notaría");
   console.log("  y el Conservador están simulados: no tienen API.");
   console.log("\n  Para leer la conversación: npm run simular -- --conversacion");
-  console.log("  Para ver un comprador indeciso: npm run simular -- --indeciso\n");
+  console.log("  Para ver un comprador indeciso: npm run simular -- --indeciso");
+  console.log("  Para ver un inversionista: npm run simular -- --inversionista\n");
 }
 
 principal().catch((error) => {

@@ -39,7 +39,18 @@ function normalizar(texto: string): string {
     .trim();
 }
 
-/** Modelo más caro que entra en el presupuesto y calza con la tipología. */
+/**
+ * El modelo que le conviene dentro del presupuesto.
+ *
+ * Para quien va a vivir ahí es el más caro que le cabe: aprovecha su
+ * capacidad y es la casa donde va a estar diez años.
+ *
+ * Para quien compra a arrendar es exactamente al revés — el más barato que
+ * calce. La unidad chica rinde más por peso invertido, se arrienda más
+ * rápido y deja capital libre para la siguiente. Recomendarle a un
+ * inversionista el departamento más caro que le cabe es venderle una sola
+ * unidad cuando venía por varias.
+ */
 function mejorModelo(proyecto: Proyecto, criterios: Criterios): ModeloProyecto | null {
   const candidatos = proyecto.modelos.filter((modelo) => {
     if (criterios.dormitorios !== null && modelo.rooms !== criterios.dormitorios) return false;
@@ -49,6 +60,11 @@ function mejorModelo(proyecto: Proyecto, criterios: Criterios): ModeloProyecto |
   });
 
   if (candidatos.length === 0) return null;
+  if (criterios.paraInvertir) {
+    return candidatos.reduce((mejor, actual) =>
+      actual.priceFinal < mejor.priceFinal ? actual : mejor,
+    );
+  }
   return candidatos.reduce((mejor, actual) => (actual.priceFinal > mejor.priceFinal ? actual : mejor));
 }
 
@@ -78,10 +94,17 @@ export function buscarCandidatos(
 
     if (criterios.presupuestoUf !== null && precioUf !== null) {
       if (precioUf <= criterios.presupuestoUf) {
-        // Mientras más cerca del techo, mejor aprovecha su capacidad.
+        // Para vivir: mientras más cerca del techo, mejor aprovecha su
+        // capacidad. Para invertir, al revés: lo barato deja capital para
+        // la unidad siguiente.
         const aprovechamiento = precioUf / criterios.presupuestoUf;
-        puntaje += 20 + Math.round(aprovechamiento * 15);
-        motivos.push(`Entra en su presupuesto de ${formatearUf(criterios.presupuestoUf)}`);
+        const ajuste = criterios.paraInvertir ? 1 - aprovechamiento : aprovechamiento;
+        puntaje += 20 + Math.round(ajuste * 15);
+        motivos.push(
+          criterios.paraInvertir
+            ? `Entra holgado en su presupuesto de ${formatearUf(criterios.presupuestoUf)}: deja capital para otra unidad`
+            : `Entra en su presupuesto de ${formatearUf(criterios.presupuestoUf)}`,
+        );
       } else if (precioUf <= criterios.presupuestoUf * 1.1) {
         puntaje += 8;
         motivos.push("Queda apenas sobre su presupuesto: negociable con descuento");

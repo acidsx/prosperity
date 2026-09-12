@@ -48,6 +48,14 @@ export function formatearClp(monto: number): string {
   }).format(monto);
 }
 
+/** Porcentaje con coma decimal, como se escribe en Chile. */
+export function formatearPorcentaje(valor: number, decimales = 2): string {
+  return `${valor.toLocaleString("es-CL", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: decimales,
+  })}%`;
+}
+
 export function formatearUf(uf: number): string {
   return `UF ${new Intl.NumberFormat("es-CL", { maximumFractionDigits: 0 }).format(Math.round(uf))}`;
 }

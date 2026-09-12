@@ -355,6 +355,9 @@ async function manejarObjecion(
     gastosComunesClp: null,
     vecesTratada,
     nombreCorredora: NOMBRE_CORREDORA,
+    // Un inversionista recibe otras respuestas: el banco le financia menos y
+    // los números que le importan son los del arriendo, no los del miedo.
+    paraInvertir: (calificacion?.perfil ?? lead.perfil).paraInvertir === true,
   });
 
   const texto = [respuesta.texto, respuesta.siguientePaso].filter(Boolean).join("\n\n");
