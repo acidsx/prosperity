@@ -203,6 +203,37 @@ Ambos verifican la firma sobre el **cuerpo crudo** antes de parsear el JSON, y
 descartan los mensajes repetidos por el id del proveedor: los dos proveedores
 reintentan, y sin eso una visita se confirmaría dos veces.
 
+## Simular una venta completa
+
+```bash
+npm run simular
+```
+
+Recorre el ciclo entero, de la consulta a la entrega, y lo narra paso a paso. Dentro de
+la aplicación está en `/simulacion`, con enlaces a la conversación y al cierre que deja
+creados, para poder recorrerlos.
+
+**No es una animación.** La calificación, la respuesta, la confirmación de la visita y
+la recepción de documentos las hace el agente llamando a las mismas funciones que
+corren en producción. Lo simulado son las respuestas del comprador, del banco, de la
+notaría y del Conservador, porque ninguno de los tres tiene API.
+
+Comprime unos cuatro meses en una corrida: los hitos llevan fechas reales calculadas
+hacia atrás desde hoy, y los mensajes de la conversación se reescriben a esas fechas
+para que la ficha del lead quede coherente.
+
+El guion incluye dos momentos que valen la pena:
+
+- **La unidad queda sobre la aprobación del banco.** El calce admite hasta 10% por
+  encima del techo por considerarlo negociable, así que la venta se cierra con el
+  descuento que haga falta. Sin eso, al comprador le faltaría pie en la firma.
+- **Los certificados del Conservador vencen a mitad de camino.** Se sacaron el día 9 y
+  duran 30 días; al llegar a la escritura, el día 60, ya no sirven. La alerta salta y se
+  vuelven a pedir. Sin ella, el problema aparece en el mesón de la notaría.
+
+La simulación también funciona como prueba de integración del recorrido completo: si
+algo se rompe entre la captación y el cierre, sus ocho pruebas lo detectan.
+
 ## Cierre de la venta
 
 Desde la reserva hasta la entrega, con los hitos que tiene una compraventa chilena:
@@ -332,7 +363,8 @@ Responde con la calificación, el mensaje redactado y los horarios propuestos.
 ```bash
 npm run dev      # desarrollo
 npm run build    # build de producción
-npm run prueba   # 130 pruebas: API, finanzas, calce, frenos, conversación, cierre
+npm run prueba   # 138 pruebas: API, finanzas, calce, frenos, conversación, cierre
+npm run simular  # una venta completa, narrada paso a paso
 npm run jetbrokers -- diagnostico  # prueba la conexión con el CRM
 npm run usuarios # alta de usuarios (requiere Supabase)
 npm run tipos    # typecheck

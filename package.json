@@ -10,7 +10,8 @@
     "mock": "tsx mock/servidor.ts",
     "mock:whatsapp": "tsx mock/whatsapp.ts",
     "usuarios": "tsx --conditions=react-server scripts/usuarios.ts",
-    "jetbrokers": "tsx --conditions=react-server scripts/jetbrokers.ts"
+    "jetbrokers": "tsx --conditions=react-server scripts/jetbrokers.ts",
+    "simular": "tsx --conditions=react-server scripts/simular.ts"
   },
   "repository": {
     "type": "git",

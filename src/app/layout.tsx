@@ -26,6 +26,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         { href: "/proyectos", etiqueta: "Proyectos" },
         { href: "/agenda", etiqueta: "Agenda" },
         { href: "/mensajeria", etiqueta: "Mensajería" },
+        { href: "/simulacion", etiqueta: "Simulación" },
         ...(puede(usuario.rol, "ver_control_de_gestion")
           ? [{ href: "/control", etiqueta: "Control" }]
           : []),
