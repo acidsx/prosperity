@@ -9,7 +9,8 @@
     "tipos": "tsc --noEmit",
     "mock": "tsx mock/servidor.ts",
     "mock:whatsapp": "tsx mock/whatsapp.ts",
-    "usuarios": "tsx --conditions=react-server scripts/usuarios.ts"
+    "usuarios": "tsx --conditions=react-server scripts/usuarios.ts",
+    "jetbrokers": "tsx --conditions=react-server scripts/jetbrokers.ts"
   },
   "repository": {
     "type": "git",

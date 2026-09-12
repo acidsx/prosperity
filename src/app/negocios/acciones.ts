@@ -10,12 +10,33 @@ import { nuevoId } from "@/lib/datos/tienda";
 import { comisionUf } from "@/lib/dominio/chile";
 import type { EstadoCredito, Negocio, TipoHito } from "@/lib/dominio/cierre";
 import type { DocumentoPropiedadId } from "@/lib/documentos/propiedad";
+import { sincronizarCliente } from "@/lib/jetbrokers/sincronizacion";
 
 function refrescar(negocioId?: string) {
   revalidatePath("/negocios");
   revalidatePath("/control");
   revalidatePath("/");
   if (negocioId) revalidatePath(`/negocios/${negocioId}`);
+}
+
+/**
+ * Devuelve el estado al CRM después de un cambio de etapa.
+ *
+ * No reenvía si el payload quedó igual, así que se puede llamar sin miedo
+ * en cada acción: el gasto del límite lo decide el sincronizador.
+ */
+async function avisarCrm(leadId: string): Promise<void> {
+  const resultado = await sincronizarCliente(leadId);
+  if (resultado.estado === "error") {
+    await tienda().registrarActividad({
+      id: nuevoId("act"),
+      leadId,
+      tipo: "error_agente",
+      detalle: `No se pudo devolver el estado a JetBrokers: ${resultado.detalle}`,
+      autor: "agente",
+      ocurridaEn: new Date().toISOString(),
+    });
+  }
 }
 
 /** Carga el negocio comprobando que el usuario tenga acceso. */
@@ -112,6 +133,7 @@ export async function marcarHito(formData: FormData): Promise<void> {
     ocurridaEn: new Date().toISOString(),
   });
 
+  if (actualizado.etapa !== negocio.etapa) await avisarCrm(negocio.leadId);
   refrescar(id);
 }
 
@@ -204,6 +226,7 @@ export async function confirmarFirma(formData: FormData): Promise<void> {
   }
 
   await tienda().guardarNegocio(actualizado);
+  if (actualizado.etapa !== negocio.etapa) await avisarCrm(negocio.leadId);
   refrescar(id);
 }
 
@@ -274,6 +297,7 @@ export async function caerNegocio(formData: FormData): Promise<void> {
 
   const negocio = await negocioAutorizado(id);
   await tienda().guardarNegocio(marcarCaido(negocio, motivo));
+  await avisarCrm(negocio.leadId);
 
   await tienda().registrarActividad({
     id: nuevoId("act"),

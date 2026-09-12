@@ -433,6 +433,12 @@ export function crearMock(puerto = 4010) {
         return json(respuesta, 200, { video: "https://video.jetbrokers.io/sala/91CerSOi.mp4" });
       }
 
+      // Auxiliar del simulador (no existe en la API real): permite revisar
+      // desde fuera del proceso qué clientes se crearon.
+      if (peticion.method === "GET" && url.pathname === "/__clientes") {
+        return json(respuesta, 200, clientesRecibidos);
+      }
+
       json(respuesta, 404, { error: "ruta no encontrada" });
     } catch (error) {
       json(respuesta, 500, { error: error instanceof Error ? error.message : "error" });

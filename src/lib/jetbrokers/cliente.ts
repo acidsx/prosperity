@@ -236,13 +236,36 @@ export class JetBrokers {
 }
 
 /** Construye el cliente desde variables de entorno. */
+const CLIENTE_COMPARTIDO = Symbol.for("prosperity.jetbrokers");
+
+/**
+ * Cliente compartido del proceso.
+ *
+ * Tiene que ser uno solo: la ventana que cuenta los envíos de la última hora
+ * vive dentro de la instancia, así que devolver una nueva en cada llamada
+ * reiniciaría el contador y el límite no frenaría nada.
+ */
 export function jetBrokersDesdeEntorno(): JetBrokers | null {
   const organizationId = process.env.JETBROKERS_ORG_ID;
   if (!organizationId) return null;
-  return new JetBrokers({
+
+  const global = globalThis as unknown as Record<symbol, { clave: string; cliente: JetBrokers } | undefined>;
+  const clave = [
+    organizationId,
+    process.env.JETBROKERS_BASE_URL ?? "",
+    process.env.JETBROKERS_ESCRITURA ?? "",
+    process.env.JETBROKERS_IP_WHITELIST ?? "",
+  ].join("|");
+
+  const guardado = global[CLIENTE_COMPARTIDO];
+  if (guardado && guardado.clave === clave) return guardado.cliente;
+
+  const cliente = new JetBrokers({
     organizationId,
     baseUrl: process.env.JETBROKERS_BASE_URL,
     permitirEscritura: process.env.JETBROKERS_ESCRITURA === "true",
     ipEnWhitelist: process.env.JETBROKERS_IP_WHITELIST === "true",
   });
+  global[CLIENTE_COMPARTIDO] = { clave, cliente };
+  return cliente;
 }

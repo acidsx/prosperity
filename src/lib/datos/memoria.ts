@@ -63,6 +63,7 @@ function poblar(proyectos = 18, leads = 14, semilla = 2026): Estado {
       comisionUf: null,
       motivoPerdida: null,
       sincronizadoEn: null,
+      huellaSincronizacion: null,
       sincronizacion: "pendiente" as const,
       detalleSincronizacion: null,
       creadaEn: lead.creadoEn,

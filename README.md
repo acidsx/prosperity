@@ -62,6 +62,48 @@ El pipeline **no inventa estados propios**: usa los mismos valores que acepta el
 `reschedule`, `quotationSended`, `dropped`, `closing`, `noQualify`, `customer`), así lo
 que se ve en el panel es lo que hay en el CRM.
 
+### Cómo se conecta
+
+1. **Consigue el `organizationId`.** Es el que aparece en las URLs del API
+   (`/api/gallery/customer/{organizationId}`).
+2. **Comprueba la conexión desde la red de la corredora**, que es donde el API es
+   alcanzable:
+
+   ```bash
+   JETBROKERS_ORG_ID=<el tuyo> npm run jetbrokers -- diagnostico
+   ```
+
+   Prueba los cinco endpoints en modo lectura, contrasta la respuesta real contra los
+   tipos del proyecto, y lista los valores de `locality`, `stage`, `mode`, `scope` y
+   `tags` que existen de verdad: son justamente las listas que la documentación dejó en
+   blanco. **No toca el POST de clientes**, que crearía un registro.
+3. **Revisa qué se enviaría** antes de habilitar la escritura:
+
+   ```bash
+   npm run jetbrokers -- payload
+   ```
+4. **Pide la whitelist de IP.** Sin ella son 10 clientes por hora y por IP; con ella,
+   900. Para una corredora con varios ejecutivos, 10 se acaban en una mañana.
+5. **Habilita la escritura** cuando el payload te calce:
+   `JETBROKERS_ESCRITURA=true`.
+
+### Devolución de estado
+
+El Customer API no tiene endpoint de actualización: para cambiar el `status` se vuelve
+a hacer POST del mismo cliente, y JetBrokers lo reconoce por `email`, `mobile` o
+`taxId` y anota los valores nuevos en su timeline.
+
+Eso significa que **cada actualización gasta uno de los diez envíos por hora**. Por eso:
+
+- Se guarda una huella del último payload enviado y **no se reenvía nada idéntico**.
+- Si no queda cupo, la sincronización queda `pendiente` en vez de fallar, y
+  `POST /api/crm` la reintenta (pensado para un cron cada hora).
+- El reintento se detiene al primer rechazo por cupo: el límite es por IP, no por lead.
+
+La etapa del cierre manda sobre el estado comercial: todo el tramo entre la reserva y la
+entrega viaja como `closing`, `cerrado` como `customer` y `caido` como `dropped`. El CRM
+no distingue las etapas internas del cierre; ese detalle vive acá.
+
 ### Resguardos
 
 - **No escribe en el CRM por defecto.** `JETBROKERS_ESCRITURA=false` simula el POST y
@@ -82,6 +124,10 @@ que se ve en el panel es lo que hay en el CRM.
   gestor mantiene su propio ID y JetBrokers deduplica por `email`, `mobile` y `taxId`.
 - No aparece autenticación más allá del `organizationId` en la URL. Si tu instancia usa
   cabecera o token, hay que agregarlo en `pedir()`.
+- **Nada de esto se ha probado contra el API real**: el entorno donde se desarrolló
+  bloquea `api.jetbrokers.io`. Todo está verificado contra un simulador que replica el
+  contrato del documento. El comando `diagnostico` existe justamente para cerrar esa
+  brecha en un paso desde tu red.
 
 ## Conversación con el comprador
 
@@ -286,7 +332,8 @@ Responde con la calificación, el mensaje redactado y los horarios propuestos.
 ```bash
 npm run dev      # desarrollo
 npm run build    # build de producción
-npm run prueba   # 119 pruebas: API, finanzas, calce, frenos, conversación, cierre
+npm run prueba   # 130 pruebas: API, finanzas, calce, frenos, conversación, cierre
+npm run jetbrokers -- diagnostico  # prueba la conexión con el CRM
 npm run usuarios # alta de usuarios (requiere Supabase)
 npm run tipos    # typecheck
 npm run mock          # mock del API de JetBrokers

@@ -38,9 +38,8 @@ import type {
   Proyecto,
   TipoActividad,
 } from "@/lib/dominio/tipos";
-import { jetBrokersDesdeEntorno } from "@/lib/jetbrokers/cliente";
 import { canalParaRespuesta, despachar } from "@/lib/mensajeria/despachador";
-import { aClienteJetBrokers } from "@/lib/jetbrokers/mapeo";
+import { sincronizarCliente } from "@/lib/jetbrokers/sincronizacion";
 import { ETIQUETA_ESTADO } from "@/lib/jetbrokers/tipos";
 
 export const FIRMA = process.env.GESTOR_FIRMA ?? "Equipo Comercial";
@@ -242,6 +241,7 @@ export async function gestionarLead(leadId: string): Promise<ResultadoGestion> {
     comisionUf: comisionDe(mejor?.proyecto, valorOportunidad),
     motivoPerdida: evaluacion.estadoSugerido === "noQualify" ? capacidad.notas[0] ?? null : null,
     sincronizadoEn: previa?.sincronizadoEn ?? null,
+    huellaSincronizacion: previa?.huellaSincronizacion ?? null,
     sincronizacion: previa?.sincronizacion ?? "pendiente",
     detalleSincronizacion: previa?.detalleSincronizacion ?? null,
     creadaEn: previa?.creadaEn ?? ahora,
@@ -306,41 +306,48 @@ export async function gestionarLead(leadId: string): Promise<ResultadoGestion> {
     await registrar(lead.id, "derivado_a_humano", "Lead caliente: requiere ejecutivo");
   }
 
-  // 7. Sincronización con el CRM.
-  const api = jetBrokersDesdeEntorno();
-  if (api) {
-    try {
-      const entrada = aClienteJetBrokers(lead, calificacion, {
-        asignarA: process.env.JETBROKERS_ASIGNAR_A,
-        referidoPor: lead.campana ?? undefined,
-        segmento: calificacion.temperatura,
-      });
-      const resultado = await api.crearCliente(entrada);
-      oportunidad.sincronizacion = resultado.enviado ? "enviado" : "simulado";
-      oportunidad.sincronizadoEn = new Date().toISOString();
-      oportunidad.detalleSincronizacion = resultado.avisos.join(" | ") || null;
-      avisos.push(...resultado.avisos);
+  // 7. Sincronización con el CRM. La oportunidad se guarda antes para que
+  // el sincronizador lea el estado recién calculado.
+  await db.guardarOportunidad(oportunidad);
+
+  const sincronizacion = await sincronizarCliente(lead.id, {
+    segmento: calificacion.temperatura,
+  });
+
+  switch (sincronizacion.estado) {
+    case "enviado":
+      avisos.push(...sincronizacion.avisos);
       await registrar(
         lead.id,
         "crm_sincronizado",
-        resultado.enviado
-          ? `Cliente creado en JetBrokers (quedan ${resultado.cuposRestantes} envíos en la hora)`
-          : "Simulación: no se llamó al API de JetBrokers",
+        `Cliente creado en JetBrokers (quedan ${sincronizacion.cuposRestantes} envíos en la hora)`,
       );
-    } catch (error) {
-      const detalle = error instanceof Error ? error.message : String(error);
-      oportunidad.sincronizacion = "error";
-      oportunidad.detalleSincronizacion = detalle;
-      avisos.push(`No se pudo sincronizar con JetBrokers: ${detalle}`);
-      await registrar(lead.id, "error_agente", `Fallo de sincronización: ${detalle}`);
-    }
-  } else {
-    avisos.push("JETBROKERS_ORG_ID no está configurado: no se sincronizó con el CRM");
+      break;
+    case "simulado":
+      avisos.push(...sincronizacion.avisos);
+      await registrar(lead.id, "crm_sincronizado", "Simulación: no se llamó al API de JetBrokers");
+      break;
+    case "sin_cambios":
+      break;
+    case "sin_cupo":
+      avisos.push(
+        `Sin cupo en JetBrokers: la sincronización queda pendiente (reintento en ~${sincronizacion.reintentarEnMinutos} min)`,
+      );
+      await registrar(lead.id, "crm_sincronizado", "Sin cupo: sincronización pendiente");
+      break;
+    case "sin_configurar":
+      avisos.push("JETBROKERS_ORG_ID no está configurado: no se sincronizó con el CRM");
+      break;
+    case "error":
+      avisos.push(`No se pudo sincronizar con JetBrokers: ${sincronizacion.detalle}`);
+      await registrar(lead.id, "error_agente", `Fallo de sincronización: ${sincronizacion.detalle}`);
+      break;
   }
 
-  await db.guardarOportunidad(oportunidad);
+  // La oportunidad se recarga: el sincronizador le escribió el resultado.
+  const guardada = (await db.oportunidadDeLead(lead.id)) ?? oportunidad;
 
-  return { leadId: lead.id, calificacion, oportunidad, avisos };
+  return { leadId: lead.id, calificacion, oportunidad: guardada, avisos };
 }
 
 /** Procesa todos los leads que aún no han sido calificados. */

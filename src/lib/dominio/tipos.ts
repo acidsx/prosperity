@@ -188,6 +188,11 @@ export interface Oportunidad {
   motivoPerdida: string | null;
   /** Resultado del último push al CRM. */
   sincronizadoEn: string | null;
+  /**
+   * Huella del último payload efectivamente enviado. Evita gastar uno de los
+   * diez envíos por hora reenviando algo idéntico.
+   */
+  huellaSincronizacion: string | null;
   sincronizacion: "pendiente" | "simulado" | "enviado" | "error";
   detalleSincronizacion: string | null;
   creadaEn: string;

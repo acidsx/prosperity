@@ -8,7 +8,11 @@ import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
 
 import { crearMock, clientesRecibidos } from "../mock/servidor";
-import { ErrorLimiteAlcanzado, JetBrokers } from "../src/lib/jetbrokers/cliente";
+import {
+  ErrorLimiteAlcanzado,
+  JetBrokers,
+  LIMITE_POR_HORA_ESTANDAR,
+} from "../src/lib/jetbrokers/cliente";
 import { conDetalle, desdeResumen } from "../src/lib/jetbrokers/mapeo";
 import { normalizarTags, validarCliente } from "../src/lib/jetbrokers/validacion";
 
@@ -28,9 +32,8 @@ describe("cliente JetBrokers", () => {
     await mock.escuchar();
   });
 
-  after(async () => {
-    await mock.cerrar();
-  });
+  // El servidor se cierra al final del archivo, no acá: hay bloques
+  // posteriores que también lo usan.
 
   it("busca proyectos y los normaliza al modelo interno", async () => {
     const api = cliente();
@@ -212,4 +215,67 @@ describe("superficie de los modelos", () => {
     );
     assert.equal(superficieUtil({ surfaceInterior: "0.00", surfaceTotal: "0.00" } as never), null);
   });
+});
+
+describe("sincronización con el CRM", () => {
+  it("traduce la etapa del cierre al estado del CRM", async () => {
+    const { estadoCrmDesdeCierre } = await import("../src/lib/jetbrokers/sincronizacion");
+    // El CRM no distingue las etapas internas del cierre: todas son "closing".
+    assert.equal(estadoCrmDesdeCierre("reserva"), "closing");
+    assert.equal(estadoCrmDesdeCierre("evaluacion_bancaria"), "closing");
+    assert.equal(estadoCrmDesdeCierre("firmas"), "closing");
+    assert.equal(estadoCrmDesdeCierre("inscripcion_cbr"), "closing");
+    assert.equal(estadoCrmDesdeCierre("cerrado"), "customer");
+    assert.equal(estadoCrmDesdeCierre("caido"), "dropped");
+  });
+
+  it("la huella ignora el orden de las claves pero no los valores", async () => {
+    const { huellaDePayload } = await import("../src/lib/jetbrokers/sincronizacion");
+
+    const uno = huellaDePayload({ fullName: "Camila", status: "closing", salary: 2_400_000 });
+    const otro = huellaDePayload({ salary: 2_400_000, status: "closing", fullName: "Camila" });
+    assert.equal(uno, otro, "el orden de las propiedades no debería contar como cambio");
+
+    const distinto = huellaDePayload({ fullName: "Camila", status: "customer", salary: 2_400_000 });
+    assert.notEqual(uno, distinto);
+  });
+});
+
+describe("cliente compartido del proceso", () => {
+  it("la ventana de envíos acumula entre llamadas", async () => {
+    // El defecto que esto cubre: devolver una instancia nueva en cada llamada
+    // reiniciaba el contador y el límite de 10 por hora no frenaba nada.
+    const { jetBrokersDesdeEntorno } = await import("../src/lib/jetbrokers/cliente");
+
+    const previo = {
+      org: process.env.JETBROKERS_ORG_ID,
+      base: process.env.JETBROKERS_BASE_URL,
+      escritura: process.env.JETBROKERS_ESCRITURA,
+    };
+    process.env.JETBROKERS_ORG_ID = "91CerSOi";
+    process.env.JETBROKERS_BASE_URL = mock.url;
+    process.env.JETBROKERS_ESCRITURA = "true";
+
+    try {
+      mock.reiniciarLimite();
+      const primero = jetBrokersDesdeEntorno()!;
+      await primero.crearCliente({ fullName: "Comprador uno" });
+
+      const segundo = jetBrokersDesdeEntorno()!;
+      assert.equal(segundo, primero, "debería ser la misma instancia");
+      assert.equal(
+        segundo.cuposRestantes(),
+        LIMITE_POR_HORA_ESTANDAR - 1,
+        "el envío anterior no quedó contabilizado",
+      );
+    } finally {
+      process.env.JETBROKERS_ORG_ID = previo.org;
+      process.env.JETBROKERS_BASE_URL = previo.base;
+      process.env.JETBROKERS_ESCRITURA = previo.escritura;
+    }
+  });
+});
+
+after(async () => {
+  await mock.cerrar();
 });
