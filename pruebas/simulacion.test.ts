@@ -120,3 +120,72 @@ describe("simulación de una venta completa", () => {
     assert.match(titulos, /Venta cerrada/);
   });
 });
+
+describe("coherencia de la conversación simulada", () => {
+  let resultado: ResultadoSimulacion;
+
+  before(async () => {
+    await tiendaMemoria.reiniciar({ proyectos: 8, leads: 2, semilla: 4242 });
+    resultado = await simularVenta();
+  });
+
+  it("los mensajes van en orden y ninguno se adelanta al que responde", async () => {
+    const mensajes = (await tiendaMemoria.listarMensajes(resultado.resumen.leadId)).sort(
+      (uno, otro) => uno.enviadoEn.localeCompare(otro.enviadoEn) || uno.id.localeCompare(otro.id),
+    );
+
+    // El defecto que esto cubre: la confirmación del comprador aparecía antes
+    // del mensaje del agente que estaba confirmando.
+    const confirmacion = mensajes.findIndex(
+      (mensaje) => mensaje.direccion === "entrante" && /confirmo/i.test(mensaje.cuerpo),
+    );
+    const propuesta = mensajes.findIndex(
+      (mensaje) => mensaje.direccion === "saliente" && /acomoda visitar/i.test(mensaje.cuerpo),
+    );
+    assert.ok(propuesta >= 0, "el agente no propuso horarios");
+    assert.ok(confirmacion > propuesta, "la confirmación quedó antes de la propuesta");
+
+    const tiempos = mensajes.map((mensaje) => new Date(mensaje.enviadoEn).getTime());
+    assert.deepEqual([...tiempos].sort((a, b) => a - b), tiempos);
+  });
+
+  it("los horarios propuestos caen cerca de la conversación, no de hoy", async () => {
+    const oportunidad = await tiendaMemoria.oportunidadDeLead(resultado.resumen.leadId);
+    const propuestos = oportunidad?.calificacion?.horariosPropuestos ?? [];
+    assert.ok(propuestos.length > 0);
+
+    const consulta = new Date(resultado.pasos[0].fecha).getTime();
+    for (const horario of propuestos) {
+      const diferencia = new Date(horario).getTime() - consulta;
+      assert.ok(diferencia > 0, "propuso un horario anterior a la consulta");
+      // Dentro de las dos semanas siguientes: antes proponía visitas de hoy
+      // en una conversación de hace cuatro meses.
+      assert.ok(
+        diferencia < 14 * 24 * 3600_000,
+        `propuso una visita ${Math.round(diferencia / 86400000)} días después de la consulta`,
+      );
+    }
+  });
+
+  it("avisa cuando una recomendación queda sobre lo que el comprador puede pagar", async () => {
+    const oportunidad = await tiendaMemoria.oportunidadDeLead(resultado.resumen.leadId);
+    const techo = oportunidad?.calificacion?.presupuestoUfEstimado ?? 0;
+    // El mensaje menciona solo las dos primeras recomendaciones, para no
+    // saturar: la advertencia se exige sobre esas.
+    const sobreElTecho = (oportunidad?.calificacion?.recomendaciones ?? [])
+      .slice(0, 2)
+      .filter((item) => (item.precioUf ?? 0) > techo);
+
+    if (sobreElTecho.length === 0) return; // en esta corrida todo cabía
+
+    const mensajes = await tiendaMemoria.listarMensajes(resultado.resumen.leadId);
+    const respuesta = mensajes.find(
+      (mensaje) => mensaje.direccion === "saliente" && /te calzan/i.test(mensaje.cuerpo),
+    );
+    assert.match(
+      respuesta?.cuerpo ?? "",
+      /sobre tu tope/i,
+      "recomendó algo sobre el techo sin decirlo",
+    );
+  });
+});

@@ -150,14 +150,18 @@ async function moverEstado(leadId: string, estado: "scheduled" | "furtherOn" | "
 async function responder(
   lead: Lead,
   texto: string,
-  opciones: { canal?: "whatsapp" | "email"; alternativaPlantilla?: { plantilla: string; variables: string[] } } = {},
+  opciones: {
+    canal?: "whatsapp" | "email";
+    alternativaPlantilla?: { plantilla: string; variables: string[] };
+    asunto?: string;
+  } = {},
 ): Promise<boolean> {
   const canal = opciones.canal ?? (lead.telefono ? "whatsapp" : "email");
   const salida =
     canal === "email"
       ? ({
           tipo: "correo" as const,
-          asunto: "Sobre tu consulta",
+          asunto: opciones.asunto ?? "Sobre tu consulta",
           html: `<p>${texto.replace(/\n/g, "<br>")}</p>`,
           texto,
         })
@@ -231,6 +235,10 @@ async function procesarAdjuntos(
 
   await responder(lead, acuse, {
     canal: entrante.canal === "email" ? "email" : "whatsapp",
+    asunto:
+      recepcion.faltantes.length === 0
+        ? "Documentos recibidos: carpeta completa"
+        : "Documentos recibidos, falta lo que te indico",
     alternativaPlantilla:
       recepcion.faltantes.length > 0
         ? { plantilla: "documentos_pendientes", variables: [lead.nombre.split(" ")[0], nombresDe(recepcion.faltantes)] }

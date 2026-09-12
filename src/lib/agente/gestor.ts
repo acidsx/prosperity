@@ -115,8 +115,22 @@ async function registrar(
   await tienda().registrarActividad(actividad);
 }
 
-export async function gestionarLead(leadId: string): Promise<ResultadoGestion> {
+export interface OpcionesGestion {
+  /**
+   * Momento desde el cual se calculan los horarios de visita y se sellan los
+   * registros. Existe para que la simulación pueda ubicar una conversación en
+   * el pasado sin que el agente proponga visitas de hoy; en producción se
+   * omite y es la hora real.
+   */
+  ahora?: Date;
+}
+
+export async function gestionarLead(
+  leadId: string,
+  opciones: OpcionesGestion = {},
+): Promise<ResultadoGestion> {
   const db = tienda();
+  const momento = opciones.ahora ?? new Date();
   const lead = await db.obtenerLead(leadId);
   if (!lead) throw new Error(`No existe el lead ${leadId}`);
 
@@ -161,7 +175,7 @@ export async function gestionarLead(leadId: string): Promise<ResultadoGestion> {
   const evaluacion = evaluar(extraccion, capacidad, candidatos, presupuestoUf);
 
   // 5. Redacción.
-  const horarios = bloquesDisponibles(new Date(), 4);
+  const horarios = bloquesDisponibles(momento, 4);
   const contexto: ContextoRedaccion = {
     lead,
     extraccion,
@@ -214,7 +228,7 @@ export async function gestionarLead(leadId: string): Promise<ResultadoGestion> {
     horariosPropuestos: horarios.slice(0, 2).map((bloque) => bloque.inicio.toISOString()),
     tags: redaccion.tags,
     motor,
-    calificadoEn: new Date().toISOString(),
+    calificadoEn: momento.toISOString(),
   };
 
   await db.actualizarLead(lead.id, { perfil });
@@ -226,7 +240,7 @@ export async function gestionarLead(leadId: string): Promise<ResultadoGestion> {
 
   // 6. Persistencia de la oportunidad.
   const mejor = candidatos[0];
-  const ahora = new Date().toISOString();
+  const ahora = momento.toISOString();
   const previa = await db.oportunidadDeLead(lead.id);
   const valorOportunidad = mejor?.precioUf ?? null;
 

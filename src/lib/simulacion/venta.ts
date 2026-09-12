@@ -163,7 +163,9 @@ export async function simularVenta(opciones: OpcionesSimulacion = {}): Promise<R
   );
 
   // ------------------------------------------------------------ calificación
-  const calificado = await gestionarLead(lead.id);
+  // Con la fecha del guion: si no, el agente propondría visitas de hoy en
+  // una conversación de hace cuatro meses.
+  const calificado = await gestionarLead(lead.id, { ahora: fechaDe(GUION.consulta) });
   await fecharMensajesNuevos(lead.id, marcaConsulta, fechaDe(GUION.consulta));
 
   const calificacion = calificado.calificacion;
@@ -711,13 +713,18 @@ async function fecharMensajesNuevos(
   const conocidos = new Set(antes.map((mensaje) => mensaje.id));
   const ahora = await db.listarMensajes(leadId);
 
-  let desplazamiento = 0;
+  // Los mensajes nuevos van después del último que ya existía: si se
+  // reinicia el reloj en cada paso, la respuesta del comprador termina
+  // apareciendo antes del mensaje que está respondiendo.
+  const ultimoConocido = ahora
+    .filter((mensaje) => conocidos.has(mensaje.id))
+    .reduce((maximo, mensaje) => Math.max(maximo, new Date(mensaje.enviadoEn).getTime()), 0);
+
+  let siguiente = Math.max(cuando.getTime(), ultimoConocido + 3 * 60_000);
   for (const mensaje of ahora) {
     if (conocidos.has(mensaje.id)) continue;
-    // Unos minutos entre mensajes para que el orden se mantenga.
-    const fecha = new Date(cuando.getTime() + desplazamiento * 60_000);
-    await db.actualizarMensaje(mensaje.id, { enviadoEn: fecha.toISOString() });
-    desplazamiento += 3;
+    await db.actualizarMensaje(mensaje.id, { enviadoEn: new Date(siguiente).toISOString() });
+    siguiente += 3 * 60_000;
   }
 
   await db.actualizarLead(leadId, { ultimoEntranteEn: cuando.toISOString() });

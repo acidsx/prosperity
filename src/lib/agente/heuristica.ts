@@ -125,13 +125,20 @@ export function redactarRespuestaHeuristica(contexto: ContextoRedaccion): Redacc
   const primerNombre = lead.nombre.split(" ")[0];
   const sugeridos = candidatos.slice(0, 2);
 
+  const techo = capacidad.precioMaximoUf;
   const lineasProyectos = sugeridos.map((candidato) => {
     const precio = candidato.precioUf ? ` desde ${formatearUf(candidato.precioUf)}` : "";
     const superficie = candidato.modelo ? superficieUtil(candidato.modelo) : null;
     const tipologia = candidato.modelo
       ? ` (${candidato.modelo.rooms}D${candidato.modelo.bathrooms}B${superficie ? `, ${superficie} m²` : ""})`
       : "";
-    return `• ${candidato.proyecto.nombre}, ${candidato.proyecto.comuna}${precio}${tipologia}`;
+    // Si queda sobre lo que puede financiar, hay que decirlo en el mismo
+    // mensaje: descubrirlo en la firma es mucho peor.
+    const sobreElTecho =
+      techo !== null && candidato.precioUf !== null && candidato.precioUf > techo
+        ? " — queda algo sobre tu tope, habría que negociar el precio"
+        : "";
+    return `• ${candidato.proyecto.nombre}, ${candidato.proyecto.comuna}${precio}${tipologia}${sobreElTecho}`;
   });
 
   const horariosTexto = horarios.slice(0, 2).map((bloque) => formatoHorario.format(bloque.inicio));

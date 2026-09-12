@@ -8,6 +8,8 @@
  * ahí en vez de los proyectos de demostración.
  */
 
+import { tienda } from "../src/lib/datos";
+import { formatearFecha } from "../src/lib/dominio/chile";
 import { simularVenta, type Actor } from "../src/lib/simulacion/venta";
 
 const ETIQUETA: Record<Actor, string> = {
@@ -28,8 +30,42 @@ function fechaCorta(iso: string): string {
   }).format(new Date(iso));
 }
 
+/** Imprime la conversación tal como quedó en la ficha del lead. */
+async function mostrarConversacion(leadId: string) {
+  const mensajes = (await tienda().listarMensajes(leadId)).sort(
+    (uno, otro) => uno.enviadoEn.localeCompare(otro.enviadoEn) || uno.id.localeCompare(otro.id),
+  );
+
+  console.log("\nCONVERSACIÓN CON EL COMPRADOR");
+  console.log("=".repeat(78));
+
+  for (const mensaje of mensajes) {
+    const quien = mensaje.direccion === "entrante" ? "COMPRADOR" : "AGENTE";
+    const sello = [
+      mensaje.canal,
+      mensaje.direccion === "saliente" ? mensaje.estado : null,
+      mensaje.plantilla ? `plantilla ${mensaje.plantilla}` : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
+    console.log(`\n[${quien}] ${formatearFecha(mensaje.enviadoEn)} — ${sello}`);
+    if (mensaje.asunto) console.log(`  Asunto: ${mensaje.asunto}`);
+    for (const linea of mensaje.cuerpo.split("\n")) {
+      console.log(`  ${linea}`);
+    }
+  }
+}
+
 async function principal() {
+  const soloConversacion = process.argv.includes("--conversacion");
   const { pasos, resumen } = await simularVenta();
+
+  if (soloConversacion) {
+    await mostrarConversacion(resumen.leadId);
+    console.log("");
+    return;
+  }
 
   console.log("\nSIMULACIÓN DE UNA VENTA COMPLETA");
   console.log("=".repeat(78));
@@ -60,7 +96,8 @@ async function principal() {
     "\n  La calificación, la respuesta y la confirmación de la visita las hizo el",
   );
   console.log("  agente con el mismo código que corre en producción. El banco, la notaría");
-  console.log("  y el Conservador están simulados: no tienen API.\n");
+  console.log("  y el Conservador están simulados: no tienen API.");
+  console.log("\n  Para leer la conversación: npm run simular -- --conversacion\n");
 }
 
 principal().catch((error) => {
