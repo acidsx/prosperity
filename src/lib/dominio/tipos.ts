@@ -127,6 +127,8 @@ export interface Lead {
   optOutEn: string | null;
   /** Conversación tomada por una persona: el agente deja de responder. */
   enManosDeHumano: boolean;
+  /** Ejecutivo dueño de la cartera. null = sin asignar. */
+  ejecutivoId: string | null;
 }
 
 export interface ProyectoRecomendado {

@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { gestionarUno } from "@/app/acciones";
 import { BotonAccion } from "@/componentes/boton-accion";
 import { EtiquetaEstado, Tarjeta, Temperatura, Vacio } from "@/componentes/ui";
+import { abrirNegocio } from "@/app/negocios/acciones";
+import { exigirUsuario, puedeVerLead } from "@/lib/auth/acceso";
 import { tienda } from "@/lib/datos";
 import { documento } from "@/lib/documentos/catalogo";
 import { formatearClp, formatearFecha, formatearUf, valorUf } from "@/lib/dominio/chile";
@@ -22,16 +24,20 @@ function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
 
 export default async function FichaLead({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const usuario = await exigirUsuario(`/leads/${id}`);
   const db = tienda();
   const lead = await db.obtenerLead(id);
   if (!lead) notFound();
+  // Un lead fuera de la cartera no existe para este usuario.
+  if (!puedeVerLead(usuario, lead)) notFound();
 
-  const [oportunidad, mensajes, visitas, actividades, solicitud, uf] = await Promise.all([
+  const [oportunidad, mensajes, visitas, actividades, solicitud, negocio, uf] = await Promise.all([
     db.oportunidadDeLead(id),
     db.listarMensajes(id),
     db.listarVisitas(),
     db.listarActividades(200),
     db.solicitudDeLead(id),
+    db.negocioDeLead(id),
     valorUf(),
   ]);
 
@@ -60,8 +66,21 @@ export default async function FichaLead({ params }: { params: Promise<{ id: stri
           {oportunidad && <EtiquetaEstado estado={oportunidad.estado} />}
           <form action={gestionarUno}>
             <input type="hidden" name="leadId" value={lead.id} />
-            <BotonAccion>{calificacion ? "Recalificar" : "Calificar"}</BotonAccion>
+            <BotonAccion variante="secundario">{calificacion ? "Recalificar" : "Calificar"}</BotonAccion>
           </form>
+          {negocio ? (
+            <Link
+              href={`/negocios/${negocio.id}`}
+              className="rounded-md bg-[var(--color-marca)] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90"
+            >
+              Ver cierre
+            </Link>
+          ) : (
+            <form action={abrirNegocio}>
+              <input type="hidden" name="leadId" value={lead.id} />
+              <BotonAccion>Abrir cierre</BotonAccion>
+            </form>
+          )}
         </div>
       </div>
 

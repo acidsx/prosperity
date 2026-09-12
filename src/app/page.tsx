@@ -3,6 +3,9 @@ import Link from "next/link";
 import { ejecutarAgente, reiniciarSimulacion, sincronizarProyectos } from "@/app/acciones";
 import { BotonAccion } from "@/componentes/boton-accion";
 import { EtiquetaEstado, Metrica, Tarjeta, Vacio } from "@/componentes/ui";
+import { exigirUsuario, leadsVisibles, veTodo } from "@/lib/auth/acceso";
+import { repartirCarteraDemo, sembrarUsuariosDemo } from "@/lib/auth/demo";
+import { sembrarNegociosDemo } from "@/lib/cierre/demo";
 import { tienda } from "@/lib/datos";
 import { formatearFecha, formatearUf, valorUf, formatearClp } from "@/lib/dominio/chile";
 import { ESTADOS_CLIENTE, ETIQUETA_ESTADO, type EstadoCliente } from "@/lib/jetbrokers/tipos";
@@ -10,8 +13,13 @@ import { ESTADOS_CLIENTE, ETIQUETA_ESTADO, type EstadoCliente } from "@/lib/jetb
 export const dynamic = "force-dynamic";
 
 export default async function Panel() {
+  const usuario = await exigirUsuario("/");
+  await sembrarUsuariosDemo();
+  await repartirCarteraDemo();
+  await sembrarNegociosDemo();
+
   const db = tienda();
-  const [leads, oportunidades, visitas, actividades, proyectos, uf] = await Promise.all([
+  const [todosLosLeads, oportunidades, visitas, actividades, proyectos, uf] = await Promise.all([
     db.listarLeads(),
     db.listarOportunidades(),
     db.listarVisitas(),
@@ -20,16 +28,21 @@ export default async function Panel() {
     valorUf(),
   ]);
 
-  const calificadas = oportunidades.filter((opo) => opo.calificacion !== null);
+  // Cada ejecutivo ve su cartera; la jefatura y operaciones ven todo.
+  const leads = leadsVisibles(usuario, todosLosLeads);
+  const suyos = new Set(leads.map((lead) => lead.id));
+  const oportunidadesVisibles = oportunidades.filter((opo) => suyos.has(opo.leadId));
+
+  const calificadas = oportunidadesVisibles.filter((opo) => opo.calificacion !== null);
   const pendientes = leads.length - calificadas.length;
-  const agendadas = oportunidades.filter((opo) => opo.estado === "scheduled");
-  const valorPipeline = oportunidades
+  const agendadas = oportunidadesVisibles.filter((opo) => opo.estado === "scheduled");
+  const valorPipeline = oportunidadesVisibles
     .filter((opo) => !["dropped", "noQualify"].includes(opo.estado))
     .reduce((total, opo) => total + (opo.valorUf ?? 0), 0);
-  const comision = oportunidades.reduce((total, opo) => total + (opo.comisionUf ?? 0), 0);
+  const comision = oportunidadesVisibles.reduce((total, opo) => total + (opo.comisionUf ?? 0), 0);
 
   const porEstado = new Map<EstadoCliente, number>();
-  for (const oportunidad of oportunidades) {
+  for (const oportunidad of oportunidadesVisibles) {
     porEstado.set(oportunidad.estado, (porEstado.get(oportunidad.estado) ?? 0) + 1);
   }
 
@@ -64,7 +77,7 @@ export default async function Panel() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Panel del gestor</h1>
           <p className="mt-1 text-sm text-[var(--color-tinta-suave)]">
-            UF de hoy {formatearClp(uf.valor)}
+            {veTodo(usuario) ? "Toda la corredora" : "Tu cartera"} · UF de hoy {formatearClp(uf.valor)}
             {uf.fuente === "fallback" ? " (valor de respaldo)" : " según mindicador.cl"}
           </p>
         </div>
@@ -131,7 +144,9 @@ export default async function Panel() {
               <Vacio mensaje="Sin actividad todavía. Procesa los leads pendientes." />
             ) : (
               <ul className="divide-y divide-[var(--color-borde)] text-sm">
-                {actividades.map((actividad) => (
+                {actividades
+                  .filter((actividad) => !actividad.leadId || suyos.has(actividad.leadId))
+                  .map((actividad) => (
                   <li key={actividad.id} className="flex gap-3 py-2">
                     <span className="w-32 shrink-0 text-xs text-[var(--color-tinta-suave)]">
                       {formatearFecha(actividad.ocurridaEn)}

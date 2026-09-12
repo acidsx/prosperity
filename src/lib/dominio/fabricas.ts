@@ -35,6 +35,7 @@ export function nuevoLead(parcial: Partial<Lead> & { nombre: string }): Lead {
     optOut: parcial.optOut ?? false,
     optOutEn: parcial.optOutEn ?? null,
     enManosDeHumano: parcial.enManosDeHumano ?? false,
+    ejecutivoId: parcial.ejecutivoId ?? null,
   };
 }
 

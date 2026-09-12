@@ -1,23 +1,37 @@
-import type { Metadata } from "next";
+import type { Metadata, Route } from "next";
 import Link from "next/link";
+
+import { salir } from "@/app/entrar/acciones";
+import { usuarioActual } from "@/lib/auth/acceso";
+import { ETIQUETA_ROL, puede } from "@/lib/auth/tipos";
 
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Gestor inmobiliario | Prosperity",
-  description: "Agente que califica leads y agenda visitas sobre el CRM de JetBrokers",
+  description: "CRM de corretaje: captación, cierre con el banco y firmas ante notario",
 };
 
-const NAVEGACION = [
-  { href: "/", etiqueta: "Panel" },
-  { href: "/leads", etiqueta: "Leads" },
-  { href: "/pipeline", etiqueta: "Pipeline" },
-  { href: "/proyectos", etiqueta: "Proyectos" },
-  { href: "/agenda", etiqueta: "Agenda" },
-  { href: "/mensajeria", etiqueta: "Mensajería" },
-] as const;
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const usuario = await usuarioActual();
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // Las rutas se declaran como texto y se afirman al renderizar: typedRoutes
+  // no puede inferir el tipo de un arreglo armado condicionalmente.
+  const navegacion: Array<{ href: string; etiqueta: string }> = usuario
+    ? [
+        { href: "/", etiqueta: "Panel" },
+        { href: "/leads", etiqueta: "Leads" },
+        { href: "/pipeline", etiqueta: "Pipeline" },
+        { href: "/negocios", etiqueta: "Cierres" },
+        { href: "/proyectos", etiqueta: "Proyectos" },
+        { href: "/agenda", etiqueta: "Agenda" },
+        { href: "/mensajeria", etiqueta: "Mensajería" },
+        ...(puede(usuario.rol, "ver_control_de_gestion")
+          ? [{ href: "/control", etiqueta: "Control" }]
+          : []),
+      ]
+    : [];
+
   return (
     <html lang="es-CL">
       <body className="min-h-screen antialiased">
@@ -27,12 +41,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               Gestor inmobiliario
             </Link>
             <nav className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--color-tinta-suave)]">
-              {NAVEGACION.map((item) => (
-                <Link key={item.href} href={item.href} className="hover:text-[var(--color-tinta)]">
+              {navegacion.map((item) => (
+                <Link key={item.href} href={item.href as Route} className="hover:text-[var(--color-tinta)]">
                   {item.etiqueta}
                 </Link>
               ))}
             </nav>
+            {usuario && (
+              <div className="ml-auto flex items-center gap-3 text-xs text-[var(--color-tinta-suave)]">
+                <span>
+                  {usuario.nombre} · {ETIQUETA_ROL[usuario.rol]}
+                </span>
+                <form action={salir}>
+                  <button type="submit" className="hover:text-[var(--color-tinta)] hover:underline">
+                    Salir
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
         </header>
         <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>

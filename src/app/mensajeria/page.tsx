@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Tarjeta, Vacio } from "@/componentes/ui";
+import { exigirUsuario, leadsVisibles } from "@/lib/auth/acceso";
 import { tienda } from "@/lib/datos";
 import { formatearFecha } from "@/lib/dominio/chile";
 import { POLITICA_POR_DEFECTO } from "@/lib/mensajeria/politica";
@@ -10,8 +11,16 @@ import { bandejaSimulada } from "@/lib/mensajeria/simulado";
 export const dynamic = "force-dynamic";
 
 export default async function Mensajeria() {
+  const usuario = await exigirUsuario("/mensajeria");
   const db = tienda();
-  const [leads, solicitudes] = await Promise.all([db.listarLeads(), db.listarSolicitudes()]);
+  const [todos, todasLasSolicitudes] = await Promise.all([
+    db.listarLeads(),
+    db.listarSolicitudes(),
+  ]);
+
+  const leads = leadsVisibles(usuario, todos);
+  const suyos = new Set(leads.map((lead) => lead.id));
+  const solicitudes = todasLasSolicitudes.filter((solicitud) => suyos.has(solicitud.leadId));
 
   const bandeja = bandejaSimulada();
   const problemas = validarCatalogo();

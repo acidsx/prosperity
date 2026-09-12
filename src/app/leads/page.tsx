@@ -3,14 +3,17 @@ import Link from "next/link";
 import { ejecutarAgente, ingresarLead } from "@/app/acciones";
 import { BotonAccion } from "@/componentes/boton-accion";
 import { EtiquetaEstado, Tarjeta, Temperatura, Vacio } from "@/componentes/ui";
+import { exigirUsuario, leadsVisibles, veTodo } from "@/lib/auth/acceso";
 import { tienda } from "@/lib/datos";
 import { formatearFecha, formatearUf } from "@/lib/dominio/chile";
 
 export const dynamic = "force-dynamic";
 
 export default async function Leads() {
+  const usuario = await exigirUsuario("/leads");
   const db = tienda();
-  const [leads, oportunidades] = await Promise.all([db.listarLeads(), db.listarOportunidades()]);
+  const [todos, oportunidades] = await Promise.all([db.listarLeads(), db.listarOportunidades()]);
+  const leads = leadsVisibles(usuario, todos);
   const porLead = new Map(oportunidades.map((opo) => [opo.leadId, opo]));
 
   const ordenados = [...leads].sort((a, b) => b.creadoEn.localeCompare(a.creadoEn));
@@ -18,7 +21,12 @@ export default async function Leads() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold tracking-tight">Bandeja de leads</h1>
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">Bandeja de leads</h1>
+          <p className="mt-1 text-sm text-[var(--color-tinta-suave)]">
+            {veTodo(usuario) ? "Toda la corredora" : "Tu cartera"} · {leads.length} leads
+          </p>
+        </div>
         <form action={ejecutarAgente}>
           <BotonAccion>Procesar pendientes</BotonAccion>
         </form>

@@ -1,12 +1,17 @@
 # Gestor inmobiliario — Prosperity
 
-Agente que gestiona la venta de propiedades en Chile sobre el CRM de **JetBrokers**:
-recibe la consulta de un comprador, extrae su perfil financiero, calcula cuánto puede
-pagar con criterios de la banca chilena, la calza contra el inventario real de
-proyectos, redacta la respuesta, propone horarios de visita y crea al cliente en el CRM.
+CRM de corretaje con un agente que atiende la captación, montado sobre el CRM de
+**JetBrokers**: recibe la consulta de un comprador, extrae su perfil financiero,
+calcula cuánto puede pagar con criterios de la banca chilena, la calza contra el
+inventario real de proyectos, conversa por WhatsApp y correo, agenda la visita, y
+después lleva la operación hasta la inscripción en el Conservador.
 
-El alcance es **captación → visita agendada**. El cierre (reserva, promesa, escritura)
-queda en manos de una persona.
+### Cómo se reparte con JetBrokers
+
+JetBrokers es dueño del **cliente y del catálogo**: es lo que su API expone. Este
+sistema es dueño de la **operación del cierre** —reserva, banco, notaría, Conservador—
+que su API no cubre. El estado vuelve al campo `status` del CRM, así el ejecutivo ve lo
+mismo en los dos lados y no hay dos verdades.
 
 ## Cómo funciona
 
@@ -152,6 +157,70 @@ Ambos verifican la firma sobre el **cuerpo crudo** antes de parsear el JSON, y
 descartan los mensajes repetidos por el id del proveedor: los dos proveedores
 reintentan, y sin eso una visita se confirmaría dos veces.
 
+## Cierre de la venta
+
+Desde la reserva hasta la entrega, con los hitos que tiene una compraventa chilena:
+reserva, evaluación bancaria (tasación y estudio de títulos), promesa, escrituración,
+firmas ante notario, inscripción en el Conservador, pago y entrega.
+
+**La etapa no se declara a mano**: se deduce de los hitos cumplidos, y apunta a dónde
+está la pelota hoy, no al último hito marcado.
+
+### Lo que realmente hace caer un cierre
+
+No es la falta de trabajo, es que a nadie le avisó. El sistema alerta de:
+
+- **Certificados vencidos.** Los del Conservador duran 30 días y los de no expropiación
+  60. La vigencia se cuenta **desde la emisión**, no desde que el documento llegó: un
+  dominio vigente sacado hace 25 días llega con 5 días de vida, no con 29.
+- **Plazos duros.** El vencimiento de la reserva y el plazo de la promesa para
+  escriturar salen como críticos: tienen consecuencias contractuales, no son un atraso
+  más.
+- **Tasación bajo el precio.** Si el banco tasa por debajo, al comprador le falta pie.
+  Conviene saberlo ahí y no en la firma.
+- **Reparos** del estudio de títulos y del Conservador, y **crédito rechazado**.
+
+### Control documental
+
+Dos catálogos distintos: los del **comprador** (liquidaciones, AFP, carpeta tributaria,
+cartola) y los de la **propiedad y el vendedor** (dominio vigente, hipotecas y
+gravámenes, prohibiciones, no expropiación, contribuciones, gastos comunes, recepción
+final). Cada uno dice dónde se pide, para qué sirve y en qué etapa tiene que estar
+arriba. Del contenido no se guarda nada: solo metadatos.
+
+## Usuarios y permisos
+
+| Rol | Alcance |
+|---|---|
+| Ejecutivo | Su cartera. Edita el cierre y los documentos de sus operaciones |
+| Operaciones | Toda la cartera, para control documental y cierres |
+| Jefatura comercial | Todo, más el control de gestión y reasignar cartera |
+| Administrador | Todo, más la gestión de usuarios |
+
+Un lead fuera de tu cartera no existe para ti: la ficha responde "no encontrado", no
+"sin permiso".
+
+Las claves se guardan con **scrypt** y sal por usuario; la sesión va en una cookie
+`httpOnly` firmada con HMAC-SHA256 que caduca a las 12 horas. No hay auto-registro: los
+usuarios los crea un administrador con `npm run usuarios`. En producción `AUTH_SECRET`
+es obligatorio y la aplicación no arranca sin él.
+
+Esto es autenticación propia, no un proveedor externo. Es suficiente para un sistema
+interno sin registro abierto, pero si más adelante quieren SSO con Google Workspace o
+segundo factor, el camino es cambiar esta capa por Supabase Auth: el resto del código
+solo consulta `usuarioActual()`.
+
+## Control de gestión
+
+Dos miradas, calculadas sobre lo que ya está registrado —sin contadores aparte que se
+puedan desfasar:
+
+- **Por ejecutivo**: cartera, mediana de tiempo hasta la primera respuesta, leads sin
+  responder, visitas, cierres, pipeline y comisión proyectada.
+- **Del agente**: cuántos leads calificó con el modelo y cuántos con la heurística,
+  mensajes enviados y frenados, escalamientos, bajas y errores, con el desglose de por
+  qué se detuvo. Un agente que escala seguido no está fallando: está pidiendo ayuda.
+
 ## Correr el proyecto
 
 ```bash
@@ -160,8 +229,10 @@ cp .env.example .env.local     # completa lo que tengas a mano
 npm run dev                    # http://localhost:3000
 ```
 
-Sin configurar nada funciona igual: inventario de demostración, tienda en memoria y
-heurística local en vez del modelo. Cada conexión que agregues reemplaza una pieza.
+Sin configurar nada funciona igual: inventario de demostración, tienda en memoria,
+heurística local en vez del modelo y cuatro usuarios de prueba que se crean solos. Cada
+conexión que agregues reemplaza una pieza. Las cuentas de demostración **solo existen
+mientras los datos estén en memoria**: en cuanto configuras Supabase desaparecen.
 
 | Variable | Efecto |
 |---|---|
@@ -169,6 +240,7 @@ heurística local en vez del modelo. Cada conexión que agregues reemplaza una p
 | `JETBROKERS_ESCRITURA=true` | Habilita la creación de clientes en el CRM |
 | `ANTHROPIC_API_KEY` | Usa Claude para extraer y redactar; sin esto, heurística local |
 | `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` | Persiste en Postgres en vez de memoria |
+| `AUTH_SECRET` | Firma las sesiones. Obligatorio en producción (mínimo 32 caracteres) |
 | `INGESTA_TOKEN` | Exige `x-ingesta-token` en las rutas de API |
 | `WHATSAPP_TOKEN` + `WHATSAPP_PHONE_NUMBER_ID` | Conecta WhatsApp; sin esto los mensajes van a la bandeja simulada |
 | `WHATSAPP_APP_SECRET` | Verifica la firma del webhook. Sin él se rechazan todos |
@@ -214,7 +286,8 @@ Responde con la calificación, el mensaje redactado y los horarios propuestos.
 ```bash
 npm run dev      # desarrollo
 npm run build    # build de producción
-npm run prueba   # 92 pruebas: API, finanzas, calce, plantillas, frenos, conversación
+npm run prueba   # 119 pruebas: API, finanzas, calce, frenos, conversación, cierre
+npm run usuarios # alta de usuarios (requiere Supabase)
 npm run tipos    # typecheck
 npm run mock          # mock del API de JetBrokers
 npm run mock:whatsapp # mock de la Cloud API de WhatsApp
@@ -239,6 +312,13 @@ y las consultas siguen siendo SQL normal.
 - Las visitas confirmadas no se sincronizan con Google Calendar.
 - Los documentos se quedan en el proveedor de correo: no hay todavía un proceso que los
   elimine al cumplirse el plazo informado, solo la fecha registrada.
+- Las fechas comprometidas de los hitos saltan sábados y domingos, pero **no los
+  feriados chilenos**: el calendario cambia cada año y una tabla desactualizada da
+  peores fechas que no tenerla. Son estimaciones para detectar atrasos, no plazos
+  contractuales.
+- **Ningún banco chileno ofrece API para corredores**, así que el estado del crédito lo
+  registra una persona. Lo mismo con la notaría y el Conservador.
+- No hay segundo factor ni bloqueo por intentos fallidos en el ingreso.
 - El valor de la UF se lee de mindicador.cl; si falla, se usa un valor de respaldo
   (`UF_FALLBACK_CLP`) que conviene actualizar.
 - El agente no negocia precio ni emite cotizaciones formales.

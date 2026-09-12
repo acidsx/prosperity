@@ -1,18 +1,24 @@
 import Link from "next/link";
 
 import { Tarjeta, Vacio } from "@/componentes/ui";
+import { exigirUsuario, leadsVisibles } from "@/lib/auth/acceso";
 import { tienda } from "@/lib/datos";
 import { formatearFecha } from "@/lib/dominio/chile";
 
 export const dynamic = "force-dynamic";
 
 export default async function Agenda() {
+  const usuario = await exigirUsuario("/agenda");
   const db = tienda();
-  const [visitas, leads, proyectos] = await Promise.all([
+  const [todasLasVisitas, todosLosLeads, proyectos] = await Promise.all([
     db.listarVisitas(),
     db.listarLeads(),
     db.listarProyectos(),
   ]);
+
+  const leads = leadsVisibles(usuario, todosLosLeads);
+  const suyos = new Set(leads.map((lead) => lead.id));
+  const visitas = todasLasVisitas.filter((visita) => suyos.has(visita.leadId));
 
   const nombreLead = new Map(leads.map((lead) => [lead.id, lead.nombre]));
   const nombreProyecto = new Map(proyectos.map((proyecto) => [proyecto.id, proyecto.nombre]));

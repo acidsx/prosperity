@@ -3,6 +3,8 @@
  * (simulación, sin configurar nada) y sobre Supabase (persistente).
  */
 
+import type { Usuario } from "@/lib/auth/tipos";
+import type { Negocio } from "@/lib/dominio/cierre";
 import type {
   Actividad,
   Lead,
@@ -48,6 +50,16 @@ export interface Tienda {
 
   listarActividades(limite?: number): Promise<Actividad[]>;
   registrarActividad(actividad: Actividad): Promise<void>;
+
+  listarUsuarios(): Promise<Usuario[]>;
+  obtenerUsuario(id: string): Promise<Usuario | null>;
+  usuarioPorEmail(email: string): Promise<Usuario | null>;
+  guardarUsuario(usuario: Usuario): Promise<void>;
+
+  listarNegocios(): Promise<Negocio[]>;
+  obtenerNegocio(id: string): Promise<Negocio | null>;
+  negocioDeLead(leadId: string): Promise<Negocio | null>;
+  guardarNegocio(negocio: Negocio): Promise<void>;
 
   /** Repuebla el escenario con datos sintéticos. */
   reiniciar(opciones?: { proyectos?: number; leads?: number; semilla?: number }): Promise<void>;

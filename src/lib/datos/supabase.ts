@@ -11,7 +11,9 @@ import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import type { Tienda } from "@/lib/datos/tienda";
+import type { Usuario } from "@/lib/auth/tipos";
 import { normalizarTelefono } from "@/lib/dominio/chile";
+import type { Negocio } from "@/lib/dominio/cierre";
 import type {
   Actividad,
   Lead,
@@ -218,6 +220,48 @@ export function tiendaSupabase(): Tienda | null {
         id: actividad.id,
         lead_id: actividad.leadId,
         datos: actividad,
+      });
+    },
+
+    async listarUsuarios() {
+      return leer<Usuario>("usuarios");
+    },
+
+    async obtenerUsuario(id) {
+      return uno<Usuario>("usuarios", id);
+    },
+
+    async usuarioPorEmail(email) {
+      const filas = await leer<Usuario>("usuarios", {
+        columna: "email",
+        valor: email.trim().toLowerCase(),
+      });
+      return filas[0] ?? null;
+    },
+
+    async guardarUsuario(usuario) {
+      await escribir("usuarios", { id: usuario.id, datos: usuario });
+    },
+
+    async listarNegocios() {
+      return leer<Negocio>("negocios");
+    },
+
+    async obtenerNegocio(id) {
+      return uno<Negocio>("negocios", id);
+    },
+
+    async negocioDeLead(leadId) {
+      const filas = await leer<Negocio>("negocios", { columna: "lead_id", valor: leadId });
+      return filas[0] ?? null;
+    },
+
+    async guardarNegocio(negocio) {
+      await escribir("negocios", {
+        id: negocio.id,
+        lead_id: negocio.leadId,
+        datos: negocio,
+        actualizado_en: negocio.actualizadoEn,
       });
     },
 

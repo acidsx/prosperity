@@ -8,7 +8,8 @@
     "prueba": "tsx --conditions=react-server --test pruebas/*.test.ts",
     "tipos": "tsc --noEmit",
     "mock": "tsx mock/servidor.ts",
-    "mock:whatsapp": "tsx mock/whatsapp.ts"
+    "mock:whatsapp": "tsx mock/whatsapp.ts",
+    "usuarios": "tsx --conditions=react-server scripts/usuarios.ts"
   },
   "repository": {
     "type": "git",

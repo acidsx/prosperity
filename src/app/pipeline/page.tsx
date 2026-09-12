@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Tarjeta, Temperatura, Vacio } from "@/componentes/ui";
+import { exigirUsuario, leadsVisibles } from "@/lib/auth/acceso";
 import { tienda } from "@/lib/datos";
 import { formatearUf } from "@/lib/dominio/chile";
 import { ESTADOS_CLIENTE, ETIQUETA_ESTADO } from "@/lib/jetbrokers/tipos";
@@ -8,13 +9,17 @@ import { ESTADOS_CLIENTE, ETIQUETA_ESTADO } from "@/lib/jetbrokers/tipos";
 export const dynamic = "force-dynamic";
 
 export default async function Pipeline() {
+  const usuario = await exigirUsuario("/pipeline");
   const db = tienda();
-  const [leads, oportunidades] = await Promise.all([db.listarLeads(), db.listarOportunidades()]);
+  const [todos, oportunidades] = await Promise.all([db.listarLeads(), db.listarOportunidades()]);
+  const leads = leadsVisibles(usuario, todos);
+  const suyos = new Set(leads.map((lead) => lead.id));
+  const visibles = oportunidades.filter((opo) => suyos.has(opo.leadId));
   const nombres = new Map(leads.map((lead) => [lead.id, lead.nombre]));
 
   const columnas = ESTADOS_CLIENTE.map((estado) => ({
     estado,
-    oportunidades: oportunidades.filter((opo) => opo.estado === estado),
+    oportunidades: visibles.filter((opo) => opo.estado === estado),
   })).filter((columna) => columna.oportunidades.length > 0);
 
   return (

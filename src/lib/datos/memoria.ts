@@ -9,6 +9,8 @@ import { generarLeads, generarProyectos } from "@/lib/datos/generador";
 import { mismoCorreo, mismoTelefono } from "@/lib/dominio/chile";
 import { nuevoMensaje } from "@/lib/dominio/fabricas";
 import type { Tienda } from "@/lib/datos/tienda";
+import type { Usuario } from "@/lib/auth/tipos";
+import type { Negocio } from "@/lib/dominio/cierre";
 import type {
   Actividad,
   Lead,
@@ -27,6 +29,8 @@ interface Estado {
   mensajes: Mensaje[];
   actividades: Actividad[];
   solicitudes: SolicitudDocumentos[];
+  usuarios: Usuario[];
+  negocios: Negocio[];
 }
 
 const CLAVE = Symbol.for("prosperity.estado");
@@ -76,6 +80,10 @@ function poblar(proyectos = 18, leads = 14, semilla = 2026): Estado {
       }),
     ),
     solicitudes: [],
+    // Los usuarios no se regeneran al reiniciar el escenario: se siembran
+    // aparte con `npm run sembrar-usuarios`.
+    usuarios: (globalThis as unknown as Record<symbol, Estado | undefined>)[CLAVE]?.usuarios ?? [],
+    negocios: [],
     actividades: consultas.map((lead, indice) => ({
       id: `act_${String(indice + 1).padStart(4, "0")}`,
       leadId: lead.id,
@@ -208,6 +216,47 @@ export const tiendaMemoria: Tienda = {
 
   async registrarActividad(actividad) {
     estado().actividades.push(clonar(actividad));
+  },
+
+  async listarUsuarios() {
+    return clonar(estado().usuarios);
+  },
+
+  async obtenerUsuario(id) {
+    return clonar(estado().usuarios.find((usuario) => usuario.id === id) ?? null);
+  },
+
+  async usuarioPorEmail(email) {
+    const buscado = email.trim().toLowerCase();
+    return clonar(
+      estado().usuarios.find((usuario) => usuario.email.toLowerCase() === buscado) ?? null,
+    );
+  },
+
+  async guardarUsuario(usuario) {
+    const actual = estado().usuarios;
+    const indice = actual.findIndex((item) => item.id === usuario.id);
+    if (indice >= 0) actual[indice] = clonar(usuario);
+    else actual.push(clonar(usuario));
+  },
+
+  async listarNegocios() {
+    return clonar(estado().negocios);
+  },
+
+  async obtenerNegocio(id) {
+    return clonar(estado().negocios.find((negocio) => negocio.id === id) ?? null);
+  },
+
+  async negocioDeLead(leadId) {
+    return clonar(estado().negocios.find((negocio) => negocio.leadId === leadId) ?? null);
+  },
+
+  async guardarNegocio(negocio) {
+    const actual = estado().negocios;
+    const indice = actual.findIndex((item) => item.id === negocio.id);
+    if (indice >= 0) actual[indice] = clonar(negocio);
+    else actual.push(clonar(negocio));
   },
 
   async reiniciar(opciones) {

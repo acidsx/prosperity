@@ -1,6 +1,7 @@
 import { sincronizarProyectos } from "@/app/acciones";
 import { BotonAccion } from "@/componentes/boton-accion";
 import { Tarjeta, Vacio } from "@/componentes/ui";
+import { exigirUsuario } from "@/lib/auth/acceso";
 import { tienda } from "@/lib/datos";
 import { formatearClp, formatearUf } from "@/lib/dominio/chile";
 import { ETIQUETA_ETAPA_PROYECTO } from "@/lib/jetbrokers/tipos";
@@ -8,6 +9,7 @@ import { ETIQUETA_ETAPA_PROYECTO } from "@/lib/jetbrokers/tipos";
 export const dynamic = "force-dynamic";
 
 export default async function Proyectos() {
+  await exigirUsuario("/proyectos");
   const proyectos = await tienda().listarProyectos();
   const desdeApi = proyectos.filter((proyecto) => proyecto.desdeApi).length;
 
