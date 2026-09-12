@@ -55,6 +55,7 @@ export function nuevoMensaje(
     plantilla: parcial.plantilla ?? null,
     asunto: parcial.asunto ?? null,
     detalleError: parcial.detalleError ?? null,
+    objecion: parcial.objecion ?? null,
   };
 }
 

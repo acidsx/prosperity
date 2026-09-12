@@ -36,6 +36,8 @@ export interface SolicitudEnvio {
   alternativaPlantilla?: { plantilla: string; variables: string[] };
   /** false para mensajes escritos por una persona: no cuentan para los topes. */
   automatico?: boolean;
+  /** Objeción del comprador que este mensaje responde, si hubo una. */
+  objecion?: string;
 }
 
 export interface ResultadoDespacho {
@@ -120,6 +122,7 @@ export async function despachar(solicitud: SolicitudEnvio): Promise<ResultadoDes
       plantilla: salida.tipo === "plantilla" ? salida.plantilla : null,
       asunto: salida.tipo === "correo" ? salida.asunto : null,
       detalleError: detalle,
+      objecion: solicitud.objecion ?? null,
     });
     await db.guardarMensaje(mensajeFallido);
     await registrar(lead.id, "error_agente", `Falló el envío por ${solicitud.canal}: ${detalle}`);
@@ -141,6 +144,7 @@ export async function despachar(solicitud: SolicitudEnvio): Promise<ResultadoDes
     plantilla: salida.tipo === "plantilla" ? salida.plantilla : null,
     asunto: salida.tipo === "correo" ? salida.asunto : null,
     detalleError: resultado.enviado ? null : (resultado.motivo ?? null),
+    objecion: solicitud.objecion ?? null,
   });
   await db.guardarMensaje(mensaje);
   await registrar(

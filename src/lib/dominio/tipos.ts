@@ -219,6 +219,8 @@ export interface Mensaje {
   /** Asunto, solo para correo. */
   asunto: string | null;
   detalleError: string | null;
+  /** Objeción del comprador que este mensaje respondió, si hubo una. */
+  objecion: string | null;
 }
 
 export type EstadoVisita = "propuesta" | "confirmada" | "realizada" | "no_asistio" | "cancelada";

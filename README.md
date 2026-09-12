@@ -234,6 +234,44 @@ El guion incluye dos momentos que valen la pena:
 La simulación también funciona como prueba de integración del recorrido completo: si
 algo se rompe entre la captación y el cierre, sus ocho pruebas lo detectan.
 
+## Simular un comprador indeciso
+
+```bash
+npm run simular -- --indeciso
+```
+
+La venta anterior es la fácil: alguien que sabe lo que quiere, puede pagarlo y confirma
+la visita al primer mensaje. El comprador habitual es el otro — no tiene claro qué
+busca, le da miedo endeudarse a 25 años, pregunta qué pasa si pierde la pega, encuentra
+todo caro, está mirando otro proyecto y desconfía de que esto sea serio.
+
+Esta simulación muestra **cómo persuade el agente y dónde se detiene**. Los mensajes del
+comprador están escritos; cada respuesta la produce `procesarEntrante` detectando la
+objeción y `responderObjecion` contestándola, con el mismo código que corre en producción.
+
+Los límites están en el código, en `LIMITES_DE_PERSUASION`, y hay pruebas que los
+verifican sobre cada respuesta posible:
+
+- **Se responde con hechos verificables**, no con presión: el dividendo que sale de su
+  renta, el arriendo de mercado de una propiedad igual, lo que cubre el seguro de
+  cesantía. Nunca escasez ni urgencia inventada ("queda solo uno", "hay otro interesado").
+- **La misma objeción se aborda dos veces como máximo.** A la tercera el agente dice que
+  no va a seguir insistiendo y deja la puerta abierta. Que alguien repita tres veces que
+  no está listo es información, no una barrera que haya que vencer.
+- **Si la propiedad está sobre lo que el banco le va a prestar, se lo dice** y ofrece
+  buscar en su rango. Meter a alguien temeroso en un dividendo que no puede pagar es un
+  negocio que se cae en la firma y una familia con un problema.
+- **La desconfianza la toma una persona.** El agente responde con hechos (la reserva se
+  paga a la inmobiliaria con comprobante, nadie es dueño hasta la inscripción en el
+  Conservador) y ofrece un ejecutivo del equipo.
+- **Nunca promete la aprobación del crédito**: la decide el banco.
+- **Si pide espacio, se le da.**
+
+Termina donde tiene que terminar un comprador que todavía está decidiendo: pidiendo los
+documentos de la preaprobación, que es gratis y no obliga a nada. Sin reserva y sin
+visita forzada. En la aplicación está en `/simulacion`, con la conversación completa y
+la objeción que respondió cada mensaje.
+
 ## Cierre de la venta
 
 Desde la reserva hasta la entrega, con los hitos que tiene una compraventa chilena:
@@ -363,8 +401,10 @@ Responde con la calificación, el mensaje redactado y los horarios propuestos.
 ```bash
 npm run dev      # desarrollo
 npm run build    # build de producción
-npm run prueba   # 138 pruebas: API, finanzas, calce, frenos, conversación, cierre
+npm run prueba   # 169 pruebas: API, finanzas, calce, frenos, conversación, objeciones, cierre
 npm run simular  # una venta completa, narrada paso a paso
+npm run simular -- --conversacion  # solo la conversación con el comprador
+npm run simular -- --indeciso      # un comprador indeciso, temeroso y lleno de dudas
 npm run jetbrokers -- diagnostico  # prueba la conexión con el CRM
 npm run usuarios # alta de usuarios (requiere Supabase)
 npm run tipos    # typecheck

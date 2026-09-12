@@ -24,8 +24,9 @@ import { comisionUf, formatearClp, formatearUf } from "@/lib/dominio/chile";
 import type { Negocio, SolicitudCredito, TipoHito } from "@/lib/dominio/cierre";
 import { crearSolicitud } from "@/lib/documentos/solicitud";
 import type { DocumentoPropiedadId } from "@/lib/documentos/propiedad";
-import { nuevoLead } from "@/lib/dominio/fabricas";
+import { nuevoLead, nuevoMensaje } from "@/lib/dominio/fabricas";
 import type { Lead } from "@/lib/dominio/tipos";
+import { fecharMensajesNuevos, restarDiasHabiles } from "@/lib/simulacion/reloj";
 import type { Entrante } from "@/lib/mensajeria/tipos";
 
 export type Actor =
@@ -140,20 +141,16 @@ export async function simularVenta(opciones: OpcionesSimulacion = {}): Promise<R
   await db.crearLead(lead);
 
   const marcaConsulta = await db.listarMensajes(lead.id);
-  await db.guardarMensaje({
-    id: nuevoId("msg"),
-    leadId: lead.id,
-    direccion: "entrante",
-    canal: "portal",
-    cuerpo: lead.mensajeInicial,
-    automatico: false,
-    enviadoEn: fechaDe(GUION.consulta).toISOString(),
-    idProveedor: null,
-    estado: "entregado",
-    plantilla: null,
-    asunto: null,
-    detalleError: null,
-  });
+  await db.guardarMensaje(
+    nuevoMensaje({
+      leadId: lead.id,
+      direccion: "entrante",
+      canal: "portal",
+      cuerpo: lead.mensajeInicial,
+      estado: "entregado",
+      enviadoEn: fechaDe(GUION.consulta).toISOString(),
+    }),
+  );
 
   anotar(
     GUION.consulta,
@@ -684,48 +681,4 @@ function registrarDocumentos(
     };
   }
   return copia;
-}
-
-function restarDiasHabiles(desde: Date, dias: number): Date {
-  const fecha = new Date(desde);
-  let restantes = dias;
-  while (restantes > 0) {
-    fecha.setDate(fecha.getDate() - 1);
-    const dia = fecha.getDay();
-    if (dia !== 0 && dia !== 6) restantes -= 1;
-  }
-  return fecha;
-}
-
-/**
- * Reescribe la hora de los mensajes que acaba de crear el agente.
- *
- * El agente sella con la hora real; la simulación necesita que la
- * conversación quede en la fecha del guion para que la ficha del lead sea
- * coherente con el resto del cierre.
- */
-async function fecharMensajesNuevos(
-  leadId: string,
-  antes: Array<{ id: string }>,
-  cuando: Date,
-): Promise<void> {
-  const db = tienda();
-  const conocidos = new Set(antes.map((mensaje) => mensaje.id));
-  const ahora = await db.listarMensajes(leadId);
-
-  // Los mensajes nuevos van después del último que ya existía: si se
-  // reinicia el reloj en cada paso, la respuesta del comprador termina
-  // apareciendo antes del mensaje que está respondiendo.
-  const ultimoConocido = ahora
-    .filter((mensaje) => conocidos.has(mensaje.id))
-    .reduce((maximo, mensaje) => Math.max(maximo, new Date(mensaje.enviadoEn).getTime()), 0);
-
-  let siguiente = Math.max(cuando.getTime(), ultimoConocido + 3 * 60_000);
-  for (const mensaje of ahora) {
-    if (conocidos.has(mensaje.id)) continue;
-    await db.actualizarMensaje(mensaje.id, { enviadoEn: new Date(siguiente).toISOString() });
-    siguiente += 3 * 60_000;
-  }
-
-  await db.actualizarLead(leadId, { ultimoEntranteEn: cuando.toISOString() });
 }

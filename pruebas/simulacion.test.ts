@@ -9,6 +9,10 @@ import { before, describe, it } from "node:test";
 import { avance, alertasDelNegocio } from "../src/lib/cierre/negocio";
 import { tiendaMemoria } from "../src/lib/datos/memoria";
 import { PLAN_CIERRE } from "../src/lib/dominio/cierre";
+import {
+  simularCompradorIndeciso,
+  type ResultadoIndeciso,
+} from "../src/lib/simulacion/indeciso";
 import { simularVenta, type ResultadoSimulacion } from "../src/lib/simulacion/venta";
 
 describe("simulación de una venta completa", () => {
@@ -186,6 +190,101 @@ describe("coherencia de la conversación simulada", () => {
       respuesta?.cuerpo ?? "",
       /sobre tu tope/i,
       "recomendó algo sobre el techo sin decirlo",
+    );
+  });
+});
+
+describe("el comprador indeciso y temeroso", () => {
+  let resultado: ResultadoIndeciso;
+
+  before(async () => {
+    await tiendaMemoria.reiniciar({ proyectos: 8, leads: 2, semilla: 1979 });
+    resultado = await simularCompradorIndeciso();
+  });
+
+  it("todas las respuestas del agente salen del código, no del guion", async () => {
+    const mensajes = await tiendaMemoria.listarMensajes(resultado.resumen.leadId);
+    const salientes = mensajes.filter((mensaje) => mensaje.direccion === "saliente");
+    assert.ok(salientes.length >= 10, "el agente contestó muy poco para esta conversación");
+    assert.equal(resultado.resumen.mensajesDelAgente, salientes.filter((m) => m.automatico).length);
+  });
+
+  it("aparecen las dudas de un comprador temeroso y cada una queda registrada", () => {
+    const tipos = resultado.resumen.objeciones.map((objecion) => objecion.tipo);
+    for (const esperada of [
+      "no_sabe_que_quiere",
+      "miedo_deuda",
+      "miedo_cesantia",
+      "precio_alto",
+      "pie_insuficiente",
+      "comparando",
+      "desconfianza",
+      "esperar_mejor_momento",
+      "prefiere_pensarlo",
+    ]) {
+      assert.ok(tipos.includes(esperada as never), `no se trató la objeción ${esperada}`);
+    }
+  });
+
+  it("no insiste más de tres veces con la misma objeción, y la tercera es para parar", () => {
+    const miedo = resultado.resumen.objeciones.find((objecion) => objecion.tipo === "miedo_deuda");
+    assert.equal(miedo?.intentos, 3, "el guion insiste tres veces con el miedo a la deuda");
+    assert.equal(resultado.resumen.seDetuvo, true, "el agente no se detuvo");
+
+    const ultima = resultado.turnos
+      .filter((turno) => turno.objecion === "miedo_deuda" && turno.voz === "agente")
+      .at(-1);
+    assert.match(ultima?.texto ?? "", /no quiero seguir insistiendo/i);
+  });
+
+  it("la desconfianza la toma una persona del equipo", () => {
+    assert.ok(resultado.resumen.escalamientos >= 1);
+    assert.ok(
+      resultado.turnos.some((turno) => turno.voz === "ejecutivo"),
+      "nadie del equipo entró a la conversación",
+    );
+  });
+
+  it("nunca inventa escasez, urgencia ni promete el crédito", () => {
+    const delAgente = resultado.turnos
+      .filter((turno) => turno.voz === "agente")
+      .map((turno) => turno.texto)
+      .join("\n");
+
+    assert.doesNotMatch(delAgente, /queda (solo|solamente) un|[úu]ltima unidad|hay otro interesado/i);
+    assert.doesNotMatch(delAgente, /sube el precio ma[ñn]ana|oferta por hoy|aprovecha ahora/i);
+    assert.doesNotMatch(delAgente, /te (lo )?van a aprobar|cr[ée]dito asegurado/i);
+  });
+
+  it("cuando la unidad queda sobre lo que le prestan, se lo dice", () => {
+    const caro = resultado.turnos.find(
+      (turno) => turno.voz === "agente" && turno.objecion === "precio_alto",
+    );
+    assert.ok(caro, "no respondió la objeción de precio");
+    assert.match(caro!.texto, /Tienes raz[óo]n|dentro de lo que financia/i);
+  });
+
+  it("la conversación va en orden y no tiene mensajes del futuro", () => {
+    const fechas = resultado.turnos.map((turno) => new Date(turno.fecha).getTime());
+    assert.deepEqual([...fechas].sort((a, b) => a - b), fechas, "los turnos no están en orden");
+
+    const ahora = Date.now();
+    assert.ok(
+      fechas.every((fecha) => fecha <= ahora),
+      "hay turnos con fecha futura",
+    );
+  });
+
+  it("termina en un paso de bajo compromiso, no en una reserva forzada", async () => {
+    const solicitud = await tiendaMemoria.solicitudDeLead(resultado.resumen.leadId);
+    assert.ok(solicitud, "no llegó a pedir los documentos de la preaprobación");
+    assert.match(resultado.resumen.desenlace, /sin compromiso/i);
+
+    // Nadie reservó nada: era un comprador que todavía está decidiendo.
+    const negocios = await tiendaMemoria.listarNegocios();
+    assert.equal(
+      negocios.filter((negocio) => negocio.leadId === resultado.resumen.leadId).length,
+      0,
     );
   });
 });

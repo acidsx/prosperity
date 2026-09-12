@@ -15,6 +15,12 @@ import "server-only";
 import { clasificarIntencion, responderConversacion } from "@/lib/agente/claude";
 import { gestionarLead } from "@/lib/agente/gestor";
 import {
+  detectarObjecion,
+  ETIQUETA_OBJECION,
+  responderObjecion,
+  type TipoObjecion,
+} from "@/lib/agente/objeciones";
+import {
   intencionDeBoton,
   intencionHeuristica,
   type Intencion,
@@ -31,6 +37,7 @@ import {
   registrarRecepcion,
 } from "@/lib/documentos/solicitud";
 import { bloquesDisponibles, formatearFecha, valorUf } from "@/lib/dominio/chile";
+import { capacidadCompra } from "@/lib/dominio/financiamiento";
 import { nuevaVisita, nuevoLead, nuevoMensaje } from "@/lib/dominio/fabricas";
 import type { Actividad, Lead, SolicitudDocumentos, Visita } from "@/lib/dominio/tipos";
 import { correoDesdeEntorno } from "@/lib/mensajeria/correo";
@@ -39,6 +46,7 @@ import { ejerceDerechos, motivoDeEscalamiento, pideBaja } from "@/lib/mensajeria
 import type { Entrante } from "@/lib/mensajeria/tipos";
 
 export const FIRMA = process.env.GESTOR_FIRMA ?? "Equipo Comercial";
+const NOMBRE_CORREDORA = process.env.NOMBRE_CORREDORA ?? "la corredora";
 
 export interface ResultadoConversacion {
   leadId: string | null;
@@ -154,6 +162,7 @@ async function responder(
     canal?: "whatsapp" | "email";
     alternativaPlantilla?: { plantilla: string; variables: string[] };
     asunto?: string;
+    objecion?: TipoObjecion;
   } = {},
 ): Promise<boolean> {
   const canal = opciones.canal ?? (lead.telefono ? "whatsapp" : "email");
@@ -175,6 +184,7 @@ async function responder(
     // mañana por el horario hábil.
     esRespuesta: true,
     alternativaPlantilla: opciones.alternativaPlantilla,
+    objecion: opciones.objecion,
   });
   return despacho.resultado !== null;
 }
@@ -309,6 +319,67 @@ async function enviarSolicitudDocumentos(lead: Lead): Promise<string> {
     : `solicitud preparada para ${lead.email} (${despacho.resultado?.motivo ?? "no enviada"})`;
 }
 
+/**
+ * Responde una duda u objeción con hechos y ofrece un paso concreto.
+ *
+ * Cuenta cuántas veces ya se abordó la misma objeción para no insistir: el
+ * límite vive en `responderObjecion`, acá solo se le entrega el conteo.
+ */
+async function manejarObjecion(
+  lead: Lead,
+  objecion: TipoObjecion,
+  canal: "whatsapp" | "email",
+): Promise<{ respondio: boolean; detalle: string }> {
+  const db = tienda();
+  const [oportunidad, mensajes, uf] = await Promise.all([
+    db.oportunidadDeLead(lead.id),
+    db.listarMensajes(lead.id),
+    valorUf(),
+  ]);
+
+  const calificacion = oportunidad?.calificacion ?? null;
+  const capacidad = capacidadCompra(calificacion?.perfil ?? lead.perfil, uf.valor);
+
+  const proyecto = oportunidad?.proyectoId ? await db.obtenerProyecto(oportunidad.proyectoId) : null;
+  const modelo = proyecto?.modelos.find((item) => item.name === oportunidad?.modelo);
+
+  const vecesTratada = mensajes.filter((mensaje) => mensaje.objecion === objecion).length;
+
+  const respuesta = responderObjecion(objecion, {
+    primerNombre: lead.nombre.split(" ")[0],
+    capacidad,
+    valorUfClp: uf.valor,
+    precioUf: modelo?.priceFinal ?? oportunidad?.valorUf ?? proyecto?.precioDesdeUf ?? null,
+    proyecto: proyecto?.nombre ?? null,
+    comuna: proyecto?.comuna ?? null,
+    gastosComunesClp: null,
+    vecesTratada,
+    nombreCorredora: NOMBRE_CORREDORA,
+  });
+
+  const texto = [respuesta.texto, respuesta.siguientePaso].filter(Boolean).join("\n\n");
+  const respondio = await responder(lead, texto, { canal, objecion });
+
+  await registrar(
+    lead.id,
+    "mensaje_enviado",
+    `Objeción "${ETIQUETA_OBJECION[objecion]}" respondida${
+      vecesTratada > 0 ? ` (intento ${vecesTratada + 1})` : ""
+    }${respuesta.seDetiene ? " · el agente deja de insistir" : ""}`,
+  );
+
+  if (respuesta.escala) {
+    await escalar(lead, `duda que conviene que tome una persona: ${ETIQUETA_OBJECION[objecion]}`);
+  }
+
+  return {
+    respondio,
+    detalle: respuesta.seDetiene
+      ? `objeción ${objecion}: se deja de insistir`
+      : `objeción ${objecion} respondida`,
+  };
+}
+
 export async function procesarEntrante(entrante: Entrante): Promise<ResultadoConversacion> {
   const db = tienda();
   const avisos: string[] = [];
@@ -426,9 +497,30 @@ export async function procesarEntrante(entrante: Entrante): Promise<ResultadoCon
     }
   }
 
-  // 5. Botón de plantilla: la intención viene explícita.
-  let lectura: LecturaIntencion;
+  // 5. Dudas y objeciones. Van antes de interpretar la intención porque un
+  // comprador que duda no está pidiendo nada: está evaluando, y eso se
+  // responde distinto.
   const porBoton = intencionDeBoton(entrante.token);
+  if (!porBoton) {
+    const objecion = detectarObjecion(entrante.texto);
+    if (objecion) {
+      const resultado = await manejarObjecion(
+        lead,
+        objecion,
+        entrante.canal === "email" ? "email" : "whatsapp",
+      );
+      return {
+        leadId: lead.id,
+        intencion: "otro",
+        accion: resultado.detalle,
+        respondio: resultado.respondio,
+        avisos,
+      };
+    }
+  }
+
+  // 6. Botón de plantilla: la intención viene explícita.
+  let lectura: LecturaIntencion;
   if (porBoton) {
     lectura = {
       intencion: porBoton,
@@ -438,7 +530,7 @@ export async function procesarEntrante(entrante: Entrante): Promise<ResultadoCon
       resumen: `Tocó el botón ${entrante.token}`,
     };
   } else {
-    // 6. Texto libre.
+    // 7. Texto libre.
     try {
       lectura = await clasificarIntencion(lead, entrante.texto);
     } catch (error) {

@@ -1,10 +1,16 @@
 import Link from "next/link";
 
-import { correrSimulacion, ultimaSimulacion } from "@/app/simulacion/acciones";
+import {
+  correrIndeciso,
+  correrSimulacion,
+  ultimaSimulacion,
+  ultimoIndeciso,
+} from "@/app/simulacion/acciones";
 import { BotonAccion } from "@/componentes/boton-accion";
 import { Metrica, Tarjeta, Vacio } from "@/componentes/ui";
 import { exigirUsuario } from "@/lib/auth/acceso";
 import { formatearUf } from "@/lib/dominio/chile";
+import type { Voz } from "@/lib/simulacion/indeciso";
 import type { Actor } from "@/lib/simulacion/venta";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +35,13 @@ const COLOR_ACTOR: Record<Actor, string> = {
   sistema: "bg-rose-100 text-rose-900",
 };
 
+const ETIQUETA_VOZ: Record<Voz, string> = {
+  comprador: "Comprador",
+  agente: "Agente",
+  ejecutivo: "Ejecutivo",
+  sistema: "Sistema",
+};
+
 function fechaCorta(iso: string): string {
   return new Intl.DateTimeFormat("es-CL", {
     day: "2-digit",
@@ -39,7 +52,7 @@ function fechaCorta(iso: string): string {
 
 export default async function Simulacion() {
   await exigirUsuario("/simulacion");
-  const resultado = await ultimaSimulacion();
+  const [resultado, indeciso] = await Promise.all([ultimaSimulacion(), ultimoIndeciso()]);
 
   return (
     <div className="space-y-6">
@@ -52,15 +65,24 @@ export default async function Simulacion() {
             producción; el banco, la notaría y el Conservador están simulados.
           </p>
         </div>
-        <form action={correrSimulacion}>
-          <BotonAccion>{resultado ? "Simular otra venta" : "Simular una venta"}</BotonAccion>
-        </form>
+        <div className="flex flex-wrap gap-2">
+          <form action={correrSimulacion}>
+            <BotonAccion>{resultado ? "Simular otra venta" : "Simular una venta"}</BotonAccion>
+          </form>
+          <form action={correrIndeciso}>
+            <BotonAccion variante="secundario">
+              {indeciso ? "Otro comprador indeciso" : "Simular un comprador indeciso"}
+            </BotonAccion>
+          </form>
+        </div>
       </div>
 
       {!resultado ? (
-        <Tarjeta>
-          <Vacio mensaje="Todavía no has corrido ninguna simulación." />
-        </Tarjeta>
+        indeciso ? null : (
+          <Tarjeta>
+            <Vacio mensaje="Todavía no has corrido ninguna simulación." />
+          </Tarjeta>
+        )
       ) : (
         <>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -130,6 +152,119 @@ export default async function Simulacion() {
           </Tarjeta>
         </>
       )}
+
+      {indeciso ? <ConversacionIndecisa resultado={indeciso} /> : null}
+    </div>
+  );
+}
+
+/**
+ * El comprador difícil: el que no sabe qué quiere, tiene miedo y duda.
+ *
+ * Se muestra la conversación completa, con la objeción que respondió cada
+ * mensaje, porque lo que hay que poder auditar es cómo persuade el agente y
+ * dónde se detiene.
+ */
+function ConversacionIndecisa({ resultado }: { resultado: NonNullable<Awaited<ReturnType<typeof ultimoIndeciso>>> }) {
+  const { turnos, resumen } = resultado;
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-lg font-semibold tracking-tight">
+          Un comprador indeciso y temeroso
+        </h2>
+        <p className="mt-1 text-sm text-[var(--color-tinta-suave)]">
+          {resumen.comprador} no sabe qué busca, le da miedo endeudarse, pregunta qué pasa si
+          pierde el trabajo, encuentra todo caro y desconfía. Las respuestas del agente salen del
+          mismo código que corre en producción; lo escrito acá son solo sus mensajes.
+        </p>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Metrica
+          etiqueta="Le financiarían"
+          valor={resumen.techoUf ? formatearUf(resumen.techoUf) : "Sin estimar"}
+          detalle="según su renta y su ahorro"
+        />
+        <Metrica
+          etiqueta="Objeciones"
+          valor={String(resumen.objeciones.length)}
+          detalle={`${resumen.mensajesDelAgente} mensajes del agente`}
+        />
+        <Metrica
+          etiqueta="Pasó a una persona"
+          valor={String(resumen.escalamientos)}
+          detalle="desconfianza: no la maneja el agente solo"
+        />
+        <Metrica
+          etiqueta="Dejó de insistir"
+          valor={resumen.seDetuvo ? "Sí" : "No hizo falta"}
+          detalle="a la tercera vez con el mismo miedo"
+        />
+      </div>
+
+      <Tarjeta titulo="Objeciones que aparecieron">
+        <ul className="flex flex-wrap gap-2">
+          {resumen.objeciones.map((objecion) => (
+            <li
+              key={objecion.tipo}
+              className="rounded-full bg-[var(--color-lienzo)] px-3 py-1 text-sm"
+            >
+              {objecion.etiqueta}
+              <span className="ml-2 text-xs text-[var(--color-tinta-suave)]">
+                {objecion.intentos} {objecion.intentos === 1 ? "vez" : "veces"}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-3 text-sm text-[var(--color-tinta-suave)]">{resumen.desenlace}</p>
+      </Tarjeta>
+
+      <Tarjeta titulo="La conversación completa">
+        <ol className="space-y-4">
+          {turnos.map((turno, indice) => (
+            <li
+              key={indice}
+              className={turno.voz === "comprador" ? "" : "sm:pl-10"}
+            >
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span
+                  className={`rounded-full px-2 py-0.5 font-medium ${
+                    turno.voz === "comprador"
+                      ? "bg-slate-100 text-slate-700"
+                      : turno.voz === "agente"
+                        ? "bg-green-100 text-green-900"
+                        : "bg-blue-100 text-blue-900"
+                  }`}
+                >
+                  {ETIQUETA_VOZ[turno.voz]}
+                </span>
+                <span className="text-[var(--color-tinta-suave)]">
+                  día {turno.dia} · {fechaCorta(turno.fecha)}
+                  {turno.canal ? ` · ${turno.canal}` : ""}
+                </span>
+                {turno.etiquetaObjecion ? (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-900">
+                    {turno.etiquetaObjecion}
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-1 whitespace-pre-wrap text-sm">{turno.texto}</p>
+              {turno.nota ? (
+                <p className="mt-1 text-xs text-[var(--color-tinta-suave)]">{turno.nota}</p>
+              ) : null}
+            </li>
+          ))}
+        </ol>
+      </Tarjeta>
+
+      <Link
+        href={`/leads/${resumen.leadId}`}
+        className="inline-block rounded-md border border-[var(--color-borde)] bg-white px-3 py-1.5 text-sm hover:bg-[var(--color-lienzo)]"
+      >
+        Ver la ficha de {resumen.comprador.split(" ")[0]}
+      </Link>
     </div>
   );
 }

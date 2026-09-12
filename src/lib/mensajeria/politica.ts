@@ -233,7 +233,9 @@ export function ejerceDerechos(texto: string): boolean {
 /** Situaciones en que el agente no debe seguir solo. */
 const FRASES_ESCALAMIENTO: Array<{ patron: RegExp; motivo: string }> = [
   { patron: /\bdescuento|rebaja|bajar el precio|contraoferta|ofrezco\b/i, motivo: "negociación de precio" },
-  { patron: /\breclamo|sernac|abogad|demanda|estafa\b/i, motivo: "reclamo o asunto legal" },
+  // "estafa" no está acá a propósito: la desconfianza se responde con hechos
+  // y además se ofrece un ejecutivo, en vez de traspasarla en silencio.
+  { patron: /\breclamo|sernac|abogad|demanda\b/i, motivo: "reclamo o asunto legal" },
   { patron: /\bhablar con (alguien|una persona|un ejecutivo|el corredor)\b/i, motivo: "pidió hablar con una persona" },
   { patron: /\beres un bot\b|\beres una m[áa]quina\b|\bhablo con un robot\b/i, motivo: "preguntó si es un bot" },
   { patron: /\bpromesa de compraventa|escritura|conservador de bienes\b/i, motivo: "trámite de cierre" },

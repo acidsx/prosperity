@@ -1,7 +1,9 @@
 /**
- * Simula una venta completa y la narra en el terminal.
+ * Simula una venta y la narra en el terminal.
  *
- *   npm run simular
+ *   npm run simular                    la venta completa, de la consulta a la entrega
+ *   npm run simular -- --conversacion  solo la conversación con el comprador
+ *   npm run simular -- --indeciso      un comprador indeciso, temeroso y lleno de dudas
  *
  * Corre contra la tienda en memoria, así que no toca nada real. Si además
  * defines JETBROKERS_BASE_URL apuntando al simulador, el inventario sale de
@@ -9,7 +11,8 @@
  */
 
 import { tienda } from "../src/lib/datos";
-import { formatearFecha } from "../src/lib/dominio/chile";
+import { formatearFecha, formatearUf } from "../src/lib/dominio/chile";
+import { simularCompradorIndeciso, type Voz } from "../src/lib/simulacion/indeciso";
 import { simularVenta, type Actor } from "../src/lib/simulacion/venta";
 
 const ETIQUETA: Record<Actor, string> = {
@@ -57,8 +60,65 @@ async function mostrarConversacion(leadId: string) {
   }
 }
 
+const ETIQUETA_VOZ: Record<Voz, string> = {
+  comprador: "COMPRADOR",
+  agente: "AGENTE   ",
+  ejecutivo: "EJECUTIVO",
+  sistema: "SISTEMA  ",
+};
+
+/** Narra la conversación con el comprador indeciso. */
+async function mostrarIndeciso() {
+  const { turnos, resumen } = await simularCompradorIndeciso();
+
+  console.log("\nUN COMPRADOR QUE NO SABE QUÉ QUIERE, TIENE MIEDO Y DUDA DE TODO");
+  console.log("=".repeat(78));
+  console.log(
+    `${resumen.comprador}${resumen.proyecto ? ` · ${resumen.proyecto}` : ""}${
+      resumen.techoUf ? ` · el banco le financiaría hasta ${formatearUf(resumen.techoUf)}` : ""
+    }`,
+  );
+
+  let ultimoDia = -1;
+  for (const turno of turnos) {
+    if (turno.dia !== ultimoDia) {
+      console.log(`\n${"-".repeat(78)}`);
+      console.log(`día ${String(turno.dia).padStart(3)} · ${fechaCorta(turno.fecha)}`);
+      ultimoDia = turno.dia;
+    }
+    const sello = [turno.canal, turno.etiquetaObjecion].filter(Boolean).join(" · ");
+    console.log(`\n[${ETIQUETA_VOZ[turno.voz]}]${sello ? ` ${sello}` : ""}`);
+    for (const linea of turno.texto.split("\n")) console.log(`  ${linea}`);
+    if (turno.nota) console.log(`  → ${turno.nota}`);
+  }
+
+  console.log("\n" + "=".repeat(78));
+  console.log("OBJECIONES QUE APARECIERON");
+  for (const objecion of resumen.objeciones) {
+    console.log(
+      `  ${objecion.etiqueta.padEnd(28)} ${objecion.intentos} ${
+        objecion.intentos === 1 ? "vez" : "veces"
+      }`,
+    );
+  }
+  console.log("\nRESULTADO");
+  console.log(`  Mensajes del agente    ${resumen.mensajesDelAgente}`);
+  console.log(`  Pasó a una persona     ${resumen.escalamientos} ${resumen.escalamientos === 1 ? "vez" : "veces"}`);
+  console.log(`  Dejó de insistir       ${resumen.seDetuvo ? "sí, a la tercera con el mismo miedo" : "no hizo falta"}`);
+  console.log(`\n  ${resumen.desenlace}`);
+  console.log(`\n  Lead ${resumen.leadId}`);
+  console.log("\n  El agente nunca inventó escasez ni urgencia, no prometió la aprobación del");
+  console.log("  crédito y, cuando la unidad quedó sobre lo que el banco le presta, lo dijo.\n");
+}
+
 async function principal() {
   const soloConversacion = process.argv.includes("--conversacion");
+
+  if (process.argv.includes("--indeciso")) {
+    await mostrarIndeciso();
+    return;
+  }
+
   const { pasos, resumen } = await simularVenta();
 
   if (soloConversacion) {
@@ -97,7 +157,8 @@ async function principal() {
   );
   console.log("  agente con el mismo código que corre en producción. El banco, la notaría");
   console.log("  y el Conservador están simulados: no tienen API.");
-  console.log("\n  Para leer la conversación: npm run simular -- --conversacion\n");
+  console.log("\n  Para leer la conversación: npm run simular -- --conversacion");
+  console.log("  Para ver un comprador indeciso: npm run simular -- --indeciso\n");
 }
 
 principal().catch((error) => {
