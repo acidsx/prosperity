@@ -1,0 +1,145 @@
+{
+  "_comentario": "Registro de beneficios vigentes. Cada entrada DEBE llevar fuente y verificadoEn. El agente solo usa las vigentes y verificadas hace menos de 90 días; el resto sale como alerta para el equipo. Actualizar con: npm run incentivos",
+  "incentivos": [
+    {
+      "id": "fogaes_vivienda",
+      "nombre": "FOGAES Vivienda (garantía estatal)",
+      "tipo": "garantia_estatal",
+      "organismo": "Fondo de Garantías Especiales, Ministerio de Hacienda",
+      "beneficiario": "comprador",
+      "estado": "vigente",
+      "resumen": "El Estado garantiza parte del crédito, así que el banco puede financiar hasta el 90% del precio y el pie baja de 20% a 10%.",
+      "requisitos": [
+        "Primera vivienda: no ser propietario de ningún otro inmueble habitacional",
+        "No haber sido beneficiario antes del programa FOGAES Vivienda",
+        "No haber recibido antes subsidios habitacionales u otra ayuda estatal para vivienda",
+        "No estar inscrito en el Registro Nacional de Deudores de Pensiones de Alimentos"
+      ],
+      "advertencias": [
+        "Financiar 90% en vez de 80% sube el dividendo, y por lo tanto el banco exige acreditar más renta",
+        "Los cupos del fondo tienen tope: la vigencia del programa no garantiza que quede cupo",
+        "Lo aprueba el banco con la garantía disponible, no la corredora"
+      ],
+      "topeViviendaUf": 4500,
+      "financiamientoMaximo": 0.9,
+      "aporteUf": null,
+      "ahorroMinimoUf": null,
+      "vigenciaDesde": "2025-06-01",
+      "vigenciaHasta": "2027-06-30",
+      "fuente": "https://fogaes.cl/sitio/requisitos/",
+      "verificadoEn": "2026-09-13",
+      "confianza": "verificado",
+      "notas": "Ley 21.640. Confirmar disponibilidad de cupo con el banco antes de comprometerlo con un comprador."
+    },
+    {
+      "id": "ds19",
+      "nombre": "Subsidio DS19 (Integración Social y Territorial)",
+      "tipo": "subsidio",
+      "organismo": "Minvu",
+      "beneficiario": "comprador",
+      "estado": "vigente",
+      "resumen": "Subsidio para comprar en proyectos del programa de integración social. Se suma al pie y no se devuelve.",
+      "requisitos": [
+        "Comprar en un proyecto acogido al DS19",
+        "Ahorro mínimo en libreta según tramo: 30 UF, 40 UF u 80 UF",
+        "Estar inscrito en el Registro Social de Hogares"
+      ],
+      "advertencias": [
+        "Se postula en llamados con fecha fija: no sirve para comprar este mes",
+        "El monto exacto depende del tramo y del llamado; está por confirmar en el folleto vigente",
+        "Solo aplica a las unidades del proyecto reservadas al programa, no a todo el edificio"
+      ],
+      "topeViviendaUf": 3000,
+      "financiamientoMaximo": null,
+      "aporteUf": null,
+      "ahorroMinimoUf": 30,
+      "vigenciaDesde": null,
+      "vigenciaHasta": null,
+      "fuente": "https://www.minvu.gob.cl/wp-content/uploads/2026/03/DS19_folleto.pdf",
+      "verificadoEn": "2026-09-13",
+      "confianza": "por_confirmar",
+      "notas": "Tramos de precio: hasta 1.600 UF, entre 1.600 y 1.900 UF, y entre 1.800 y 3.000 UF. El monto del subsidio por tramo NO está verificado: hay que leer el folleto del llamado vigente antes de darle una cifra a un comprador."
+    },
+    {
+      "id": "ds1_tramo3",
+      "nombre": "Subsidio DS1 Tramo 3",
+      "tipo": "subsidio",
+      "organismo": "Minvu",
+      "beneficiario": "comprador",
+      "estado": "vigente",
+      "resumen": "Subsidio de clase media para comprar una vivienda de hasta UF 2.200. Se suma al pie.",
+      "requisitos": [
+        "Vivienda de hasta UF 2.200",
+        "Ahorro mínimo de 80 UF en libreta con al menos 12 meses de antigüedad",
+        "Estar inscrito en el Registro Social de Hogares"
+      ],
+      "advertencias": [
+        "La libreta necesita 12 meses de antigüedad: si la abrió este año, no alcanza para el llamado próximo",
+        "Se postula en llamados con fecha fija",
+        "El monto del subsidio depende del tramo y del llamado"
+      ],
+      "topeViviendaUf": 2200,
+      "financiamientoMaximo": null,
+      "aporteUf": null,
+      "ahorroMinimoUf": 80,
+      "vigenciaDesde": null,
+      "vigenciaHasta": null,
+      "fuente": "https://www.chileatiende.gob.cl/fichas/5436-ds-1-tramo-3-subsidio-habitacional-para-comprar-una-vivienda-de-hasta-2-200-uf",
+      "verificadoEn": "2026-09-13",
+      "confianza": "por_confirmar",
+      "notas": "Monto del subsidio por confirmar en la ficha vigente de ChileAtiende."
+    },
+    {
+      "id": "ceec_iva_construccion",
+      "nombre": "Crédito especial de IVA a la construcción",
+      "tipo": "tributario",
+      "organismo": "Servicio de Impuestos Internos",
+      "beneficiario": "constructora",
+      "estado": "vigente",
+      "resumen": "La constructora descuenta parte del IVA de la venta. NO es una devolución al comprador: puede reflejarse en un precio de lista más bajo, nada más.",
+      "requisitos": [
+        "Viviendas de hasta UF 2.000 en el régimen general",
+        "Para viviendas con subsidio Minvu el beneficio es del 12,35% del valor de venta, con tope de UF 225"
+      ],
+      "advertencias": [
+        "NUNCA decirle a un comprador que le devuelven IVA: el crédito es de la empresa constructora",
+        "Está en extinción por la Ley 21.420: la tasa del período transitorio 2025-2026 es 16,25% y se elimina en 2027",
+        "Un proyecto que hoy se beneficia puede subir de precio cuando el crédito termine"
+      ],
+      "topeViviendaUf": 2000,
+      "financiamientoMaximo": null,
+      "aporteUf": null,
+      "ahorroMinimoUf": null,
+      "vigenciaDesde": null,
+      "vigenciaHasta": "2026-12-31",
+      "fuente": "https://www.sii.cl/preguntas_frecuentes/impuestos_mensuales/001_130_0967.htm",
+      "verificadoEn": "2026-09-13",
+      "confianza": "por_confirmar",
+      "notas": "Ley 21.420 fija la eliminación definitiva desde el 1 de enero de 2027. La tasa de 16,25% para 2025-2026 y el 12,35% con tope UF 225 para viviendas con subsidio vienen de fuentes secundarias: verificar en la circular del SII antes de usarlos con un cliente."
+    },
+    {
+      "id": "ley_iva_vivienda_2026",
+      "nombre": "Proyecto de ley de IVA a la vivienda 2026",
+      "tipo": "tributario",
+      "organismo": "Congreso Nacional",
+      "beneficiario": "comprador",
+      "estado": "en_tramite",
+      "resumen": "Proyecto en tramitación sobre el IVA a la vivienda. Todavía no es ley.",
+      "requisitos": [],
+      "advertencias": [
+        "En tramitación: no se ofrece, no se menciona como beneficio disponible",
+        "Si se publica, hay que actualizar este registro antes de que el agente lo use"
+      ],
+      "topeViviendaUf": null,
+      "financiamientoMaximo": null,
+      "aporteUf": null,
+      "ahorroMinimoUf": null,
+      "vigenciaDesde": null,
+      "vigenciaHasta": null,
+      "fuente": "https://www.camara.cl/",
+      "verificadoEn": "2026-09-13",
+      "confianza": "por_confirmar",
+      "notas": "Entrada de seguimiento. Existe para que el equipo lo vigile, no para venderlo."
+    }
+  ]
+}

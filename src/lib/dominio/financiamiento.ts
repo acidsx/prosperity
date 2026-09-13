@@ -32,9 +32,16 @@ export interface CapacidadCompra {
   notas: string[];
 }
 
-function capitalDesdeDividendo(dividendoUf: number): number {
+/**
+ * Capital que financia un dividendo dado, en la misma unidad.
+ *
+ * Exportada porque la usan el cálculo de capacidad, las alternativas y el
+ * efecto de las garantías estatales: si cada una la reimplementa, tarde o
+ * temprano dos partes del sistema dan cifras distintas para el mismo caso.
+ */
+export function capitalDesdeDividendo(dividendoUf: number, anos = PLAZO_ANOS): number {
   const tasaMensual = TASA_ANUAL_REFERENCIA / 12;
-  const cuotas = PLAZO_ANOS * 12;
+  const cuotas = anos * 12;
   const factor = Math.pow(1 + tasaMensual, cuotas);
   return (dividendoUf * (factor - 1)) / (tasaMensual * factor);
 }

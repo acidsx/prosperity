@@ -21,6 +21,8 @@ import type { ProveedorModelo } from "@/lib/agente/modelo";
 import { ETIQUETA_PERFIL, type PerfilProspecto } from "@/lib/agente/persona";
 import { tienda } from "@/lib/datos";
 import { inventario } from "@/lib/datos/inventario";
+import { incentivos } from "@/lib/datos/incentivos";
+import { incentivosUtilizables } from "@/lib/dominio/incentivos";
 import { bloquesDisponibles, valorUf } from "@/lib/dominio/chile";
 import { capacidadCompra } from "@/lib/dominio/financiamiento";
 import {
@@ -265,6 +267,10 @@ export async function simularCloser(opciones: OpcionesCloser): Promise<Resultado
       .filter((precio) => precio > 0)
       .sort((uno, otro) => uno - otro)[0] ?? null;
 
+    // Solo lo vigente y verificado llega al agente. Lo vencido y lo que nadie
+    // ha revisado sale como alerta para el equipo, no como argumento de venta.
+    const beneficios = incentivosUtilizables(incentivos(), cuandoEntra);
+
     const alternativas = alternativasDeFinanciamiento({
       perfil: perfilFinanciero,
       capacidadBase: capacidad,
@@ -272,6 +278,7 @@ export async function simularCloser(opciones: OpcionesCloser): Promise<Resultado
       precioObjetivoUf: masBarata,
       proyectos,
       ahora: cuandoEntra,
+      incentivos: beneficios,
     });
 
     // Si con su capacidad actual no entra nada, se busca de nuevo con el techo
@@ -322,6 +329,7 @@ export async function simularCloser(opciones: OpcionesCloser): Promise<Resultado
       unidadesDeseadas: deseadas,
       gastosComunesClp: 90_000,
       alternativas: alcanzaSolo ? alternativas.slice(0, 2) : alternativas,
+      incentivos: beneficios,
       ahora: cuandoEntra,
     });
 

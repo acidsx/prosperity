@@ -15,3 +15,4 @@ grabaciones/respuesta.txt
 # Datos derivados del mockup (se regeneran con npm run mockup-datos)
 mockup/datos.json
 mockup/datos.min.json
+mockup/incentivos.json

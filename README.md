@@ -271,6 +271,37 @@ Lo que el verificador rechaza:
 - ofrecer un descuento que el agente no aprueba;
 - un mensaje que no cierra con una pregunta.
 
+### Beneficios vigentes: FOGAES, subsidios e IVA
+
+Es la parte del sistema que más rápido se echa a perder. FOGAES tiene fecha de término y
+cupos, los subsidios abren y cierran por llamado, y el crédito especial de IVA a la
+construcción se extingue por ley con una tasa distinta cada año. Un agente que cite un
+beneficio que venció el mes pasado no está siendo útil: está comprometiendo a la corredora.
+
+Por eso el registro **no vive en el código** sino en `datos/incentivos.json`, y cada entrada
+obliga a declarar tres cosas: **de dónde salió** (`fuente`), **cuándo lo revisó una persona**
+(`verificadoEn`) y **hasta cuándo sirve** (`vigenciaHasta`).
+
+```bash
+npm run incentivos            # qué está vigente y qué hay que revisar
+npm run incentivos -- --ficha # cómo lo ve el agente
+```
+
+El agente solo recibe lo vigente **y** verificado hace menos de 90 días. Lo vencido, lo que
+está por vencer y lo que nadie ha confirmado sale como alerta para el equipo, no como
+argumento de venta. Un proyecto de ley en trámite se registra para vigilarlo, y nunca se
+ofrece.
+
+Dos cosas que el registro evita:
+
+- **Atribuirle al comprador un beneficio que es de la constructora.** El crédito especial de
+  IVA lo descuenta la empresa; decirle a alguien que "le devuelven el IVA" es falso. El
+  registro marca el `beneficiario` y el verificador rechaza el mensaje que lo confunda.
+- **Vender una garantía que no cambia su caso.** FOGAES baja el pie de 20% a 10%, pero
+  entonces el límite deja de ser el ahorro y pasa a ser la renta — y con 90% financiado el
+  dividendo es *mayor*. `efectoEnCapacidad` acota por pie, por tope del programa y por renta,
+  así que la ficha le dice al agente si el beneficio de verdad le sube el techo o no.
+
 ### Cuando no le alcanza: las alternativas
 
 El error que esto corrige es concreto: el agente decía "no tengo nada en tu rango" teniendo
@@ -509,12 +540,13 @@ Responde con la calificación, el mensaje redactado y los horarios propuestos.
 ```bash
 npm run dev      # desarrollo
 npm run build    # build de producción
-npm run prueba   # 252 pruebas: API, finanzas, inversión, calce, frenos, conversación, objeciones, cierre
+npm run prueba   # 271 pruebas: API, finanzas, inversión, calce, frenos, conversación, objeciones, cierre
 npm run simular  # una venta completa, narrada paso a paso
 npm run simular -- --conversacion  # solo la conversación con el comprador
 npm run simular -- --indeciso      # un comprador indeciso, temeroso y lleno de dudas
 npm run simular -- --inversionista # un inversionista que quiere varios departamentos
 npm run closer -- A | B             # el agente conversando con modelo
+npm run incentivos                  # vigencia de FOGAES, subsidios e IVA
 npm run grabar -- A | B             # graba los turnos contra el modelo
 npm run jetbrokers -- diagnostico  # prueba la conexión con el CRM
 npm run usuarios # alta de usuarios (requiere Supabase)

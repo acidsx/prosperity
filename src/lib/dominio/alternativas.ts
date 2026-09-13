@@ -31,9 +31,15 @@ import {
   TASA_ANUAL_REFERENCIA,
   type CapacidadCompra,
 } from "@/lib/dominio/financiamiento";
+import {
+  efectoEnCapacidad,
+  estadoDeVigencia,
+  type Incentivo,
+} from "@/lib/dominio/incentivos";
 import type { PerfilFinanciero, Proyecto } from "@/lib/dominio/tipos";
 
 export type TipoAlternativa =
+  | "garantia_estatal"
   | "segundo_titular"
   | "plazo_30"
   | "bono_pie"
@@ -43,6 +49,7 @@ export type TipoAlternativa =
   | "leasing";
 
 export const ETIQUETA_ALTERNATIVA: Record<TipoAlternativa, string> = {
+  garantia_estatal: "Garantía estatal (pie de 10%)",
   segundo_titular: "Multicrédito con segundo titular",
   plazo_30: "Crédito a 30 años",
   bono_pie: "Bono pie de la inmobiliaria",
@@ -73,6 +80,8 @@ export interface Alternativa {
   efectivoHoyClp: number | null;
   /** Proyectos del inventario donde esta vía está disponible. */
   proyectos: string[];
+  /** De dónde salió, cuando la vía viene de un programa estatal. */
+  fuente?: string;
 }
 
 function cuota(capitalUf: number, tasaAnual: number, anos: number): number {
@@ -121,6 +130,8 @@ export interface ContextoAlternativas {
   ahora: Date;
   /** Renta líquida del segundo titular, si ya se sabe. */
   rentaSegundoTitularClp?: number | null;
+  /** Beneficios vigentes del registro. Solo entran los utilizables. */
+  incentivos?: Incentivo[];
 }
 
 /**
@@ -137,6 +148,34 @@ export function alternativasDeFinanciamiento(contexto: ContextoAlternativas): Al
 
   const pieUf = capacidadBase.pieUf;
   const dividendoMaximoUf = capacidadBase.dividendoMaximoClp / valorUfClp;
+
+  // --------------------------------------------------------- garantía estatal
+  // Va primera porque es la que más mueve el techo de un comprador de primera
+  // vivienda: bajar el pie de 20% a 10% duplica lo que alcanza con el mismo
+  // ahorro. Solo entra si el registro dice que está vigente y verificado.
+  for (const incentivo of contexto.incentivos ?? []) {
+    const vigencia = estadoDeVigencia(incentivo, contexto.ahora);
+    if (vigencia !== "vigente" && vigencia !== "por_vencer") continue;
+
+    // El efecto viene acotado por el pie, por el tope del programa y por la
+    // renta: es el mismo cálculo que ve la ficha, así que no pueden discrepar.
+    const efecto = efectoEnCapacidad(incentivo, pieUf, dividendoMaximoUf);
+    const techoReal = efecto?.precioMaximoUf ?? 0;
+    if (!efecto || techoReal <= base) continue;
+
+    alternativas.push({
+      tipo: "garantia_estatal",
+      titulo: incentivo.nombre,
+      comoFunciona: incentivo.resumen,
+      requisito: incentivo.requisitos.join(". "),
+      advertencia: incentivo.advertencias.join(". "),
+      precioMaximoUf: techoReal,
+      gananciaUf: Math.round(techoReal - base),
+      efectivoHoyClp: Math.round(techoReal * efecto.fraccionPie * valorUfClp),
+      proyectos: [],
+      fuente: `${incentivo.fuente} · verificado ${incentivo.verificadoEn}`,
+    });
+  }
 
   // ------------------------------------------------- multicrédito (2 titulares)
   const rentaSegundo =

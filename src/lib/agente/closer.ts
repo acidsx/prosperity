@@ -39,6 +39,7 @@ import {
 } from "@/lib/dominio/inversion";
 import { PLAZO_ANOS, TASA_ANUAL_REFERENCIA } from "@/lib/dominio/financiamiento";
 import type { Alternativa, TipoAlternativa } from "@/lib/dominio/alternativas";
+import { efectoEnCapacidad, resumenParaFicha, type Incentivo } from "@/lib/dominio/incentivos";
 import type { Lead, PerfilFinanciero, Proyecto } from "@/lib/dominio/tipos";
 import { superficieUtil } from "@/lib/jetbrokers/mapeo";
 
@@ -69,6 +70,8 @@ export interface DatosFicha {
   gastosComunesClp?: number | null;
   /** Vías para cerrar la brecha cuando la capacidad base no alcanza. */
   alternativas?: Alternativa[];
+  /** Beneficios vigentes del registro. Ya filtrados: acá no llega lo vencido. */
+  incentivos?: Incentivo[];
   ahora: Date;
 }
 
@@ -272,6 +275,36 @@ export function fichaDeHechos(datos: DatosFicha): FichaDeHechos {
     );
   }
 
+  const beneficios = datos.incentivos ?? [];
+  if (beneficios.length > 0) {
+    bloques.push(
+      [
+        `BENEFICIOS ESTATALES Y TRIBUTARIOS VIGENTES HOY`,
+        `Estos son los únicos que existen y están vigentes. No menciones ningún otro, aunque lo recuerdes.`,
+        `Cada uno va con sus requisitos completos y sus advertencias: no se ofrece la mitad buena.`,
+        ...beneficios.map((incentivo, indice) => {
+          // Qué significa el beneficio para ESTE prospecto. Sin esto el modelo
+          // tiene que deducirlo, y un beneficio que suena bien pero no mueve
+          // su número termina ofrecido igual.
+          const efecto = efectoEnCapacidad(
+            incentivo,
+            capacidad.pieUf,
+            capacidad.dividendoMaximoClp / valorUfClp,
+          );
+          const sinDatos = capacidad.precioMaximoUf === null || capacidad.dividendoMaximoClp <= 0;
+          const linea = sinDatos
+            ? `   EN ESTE CASO: todavía no se puede evaluar; falta saber su renta y su ahorro.`
+            : efecto && (efecto.precioMaximoUf ?? 0) > (capacidad.precioMaximoUf ?? 0)
+              ? `   EN ESTE CASO: le sube el techo de ${formatearUf(capacidad.precioMaximoUf ?? 0)} a ${formatearUf(efecto.precioMaximoUf ?? 0)}. Ofrecerlo.`
+              : efecto
+                ? `   EN ESTE CASO: NO le sube el techo. Con ${formatearUf(capacidad.pieUf)} de pie el límite deja de ser el ahorro y pasa a ser la renta, que solo soporta ${formatearClp(capacidad.dividendoMaximoClp)} de dividendo. Se puede mencionar que existe, pero NO como la solución a su caso.`
+                : `   EN ESTE CASO: no cambia su capacidad de compra; es un beneficio de otro tipo.`;
+          return `${indice + 1}. ${resumenParaFicha(incentivo)}\n${linea}`;
+        }),
+      ].join("\n"),
+    );
+  }
+
   const alternativas = datos.alternativas ?? [];
   if (alternativas.length > 0) {
     bloques.push(
@@ -451,6 +484,19 @@ export function verificarRespuesta(
     problemas.push({
       regla: "Si el flujo de arriendo es negativo, el mensaje lo dice",
       detalle: "Afirmó que el arriendo cubre el dividendo y la ficha dice que no",
+    });
+  }
+
+  // El crédito especial de IVA es de la constructora. Prometerle al comprador
+  // que "le devuelven el IVA" es la confusión más común del rubro.
+  if (
+    /te devuelven el iva|devoluci[óo]n de iva para ti|recuperas el iva|te descuentan el iva/i.test(
+      salida.mensaje,
+    )
+  ) {
+    problemas.push({
+      regla: "No atribuir al comprador un beneficio que es de la constructora",
+      detalle: "Ofreció devolución de IVA al comprador; el crédito especial es de la empresa constructora",
     });
   }
 
