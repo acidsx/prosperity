@@ -99,7 +99,7 @@ export const AFIRMACIONES_PROHIBIDAS: AfirmacionProhibida[] = [
   {
     id: "urgencia_fabricada",
     patron:
-      /te (va a |ir[áa] a )?costar[áa]? millones|costarte millones|posponer[^.]{0,40}(millones|much[íi]simo)|si no (decides|firmas) (hoy|ahora)|ma[ñn]ana ya no|[úu]ltima oportunidad/i,
+      /te (va a |ir[áa] a |puede |podr[íi]a )?costar[áa]? millones|costarte millones|posponer[^.]{0,40}(millones|much[íi]simo)|cada mes que lo postergas|si no (decides|firmas) (hoy|ahora)|ma[ñn]ana ya no|[úu]ltima oportunidad|el precio de lista no se congela/i,
     afirmacion: "Presión por urgencia: que postergar la decisión le costará millones.",
     porQue:
       "Los plazos reales se dicen con su fecha y su fuente, y eso ya es suficiente urgencia. Convertirlos en una amenaza difusa es presión sobre alguien que está tomando la decisión financiera más grande de su vida, y es lo que hace que un negocio se caiga en la firma.",

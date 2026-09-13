@@ -16,11 +16,18 @@ import { AFIRMACIONES_PROHIBIDAS } from "../src/lib/dominio/afirmaciones";
 import { tiendaMemoria } from "../src/lib/datos/memoria";
 import { ANCLA_GRABACION, simularCloser, type GuionCloser } from "../src/lib/simulacion/closer";
 
-function grabacion(guion: GuionCloser, version: VersionPrompt): Grabacion | null {
+function grabacion(guion: GuionCloser, version: VersionPrompt, crudo: boolean): Grabacion | null {
   const sufijo = version === "v1" ? "" : `-${version}`;
   try {
     return JSON.parse(
-      readFileSync(join(process.cwd(), "grabaciones", `closer-${guion.toLowerCase()}${sufijo}.json`), "utf8"),
+      readFileSync(
+        join(
+          process.cwd(),
+          "grabaciones",
+          `closer-${guion.toLowerCase()}${sufijo}${crudo ? "-crudo" : ""}.json`,
+        ),
+        "utf8",
+      ),
     ) as Grabacion;
   } catch {
     return null;
@@ -31,14 +38,16 @@ async function principal() {
   const corridas: unknown[] = [];
 
   for (const version of ["v1", "v2"] as VersionPrompt[]) {
-    for (const guion of ["A", "B"] as GuionCloser[]) {
-      const grabada = grabacion(guion, version);
+    for (const crudo of [false, true]) {
+      for (const guion of ["A", "B"] as GuionCloser[]) {
+      const grabada = grabacion(guion, version, crudo);
       if (!grabada) continue;
 
       await tiendaMemoria.reiniciar({ proyectos: 8, leads: 2, semilla: 2026 });
       const { turnos, resumen } = await simularCloser({
         guion,
         version,
+        intervencion: crudo ? "ninguna" : "correccion",
         proveedor: proveedorGrabado(grabada),
         ahora: ANCLA_GRABACION,
       });
@@ -63,7 +72,16 @@ async function principal() {
           };
         });
 
-      corridas.push({ version, nombreVersion: PROMPTS[version].nombre, guion, turnos, resumen, rechazados });
+      corridas.push({
+        version,
+        nombreVersion: PROMPTS[version].nombre,
+        intervencion: crudo ? "ninguna" : "correccion",
+        guion,
+        turnos,
+        resumen,
+        rechazados,
+      });
+      }
     }
   }
 

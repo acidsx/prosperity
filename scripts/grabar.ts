@@ -33,9 +33,14 @@ function versionElegida(): "v1" | "v2" {
   return process.argv.includes("--v2") ? "v2" : "v1";
 }
 
+function intervencionElegida(): "correccion" | "ninguna" {
+  return process.argv.includes("--crudo") ? "ninguna" : "correccion";
+}
+
 export function rutaGrabacion(guion: GuionCloser, version = versionElegida()): string {
   const sufijo = version === "v1" ? "" : `-${version}`;
-  return join(CARPETA, `closer-${guion.toLowerCase()}${sufijo}.json`);
+  const crudo = intervencionElegida() === "ninguna" ? "-crudo" : "";
+  return join(CARPETA, `closer-${guion.toLowerCase()}${sufijo}${crudo}.json`);
 }
 
 function leer(guion: GuionCloser): Grabacion {
@@ -140,6 +145,7 @@ async function principal() {
     const { resumen } = await simularCloser({
       guion,
       version: versionElegida(),
+      intervencion: intervencionElegida(),
       proveedor: proveedorQueContinua(grabacion, enVivo, respuestaManual),
     });
     guardar(guion, grabacion);

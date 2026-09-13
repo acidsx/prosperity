@@ -336,9 +336,21 @@ Los prompts se versionan en `src/lib/agente/closer.ts` (`PROMPTS`) y se guardan 
 sin corregirles nada: si se editan las frases problemáticas, la prueba deja de medir algo.
 
 ```bash
-npm run closer -- B --v2   # corre la conversación con el prompt v2.0
-npm run auditoria          # qué rechazó el verificador, con su norma
+npm run closer -- B --v2            # con el apéndice del sistema y corrección
+npm run closer -- A --v2 --crudo    # el prompt literal, sin corregir la salida
+npm run auditoria                   # qué observó el verificador, con su norma
 ```
+
+Dos modos de intervención:
+
+| | `correccion` (por defecto) | `--crudo` |
+|---|---|---|
+| Prompt | con el apéndice de hechos del sistema | literal, como lo escribió su autor |
+| Ficha | incluye el recordatorio de lo que se revisa | solo datos |
+| Si incumple | se le devuelve al modelo para que rehaga | sale tal cual; la verificación solo anota |
+
+El modo crudo existe para ver qué produce un prompt **por sí solo**. Es la única forma de
+evaluarlo: con el apéndice puesto y la corrección andando, se mide el sistema, no el prompt.
 
 `src/lib/dominio/afirmaciones.ts` es la capa que **ningún prompt comercial puede apagar**:
 afirmaciones que el agente no puede hacer, cada una con la norma que lo impide, la fuente y
@@ -579,7 +591,7 @@ npm run simular -- --indeciso      # un comprador indeciso, temeroso y lleno de 
 npm run simular -- --inversionista # un inversionista que quiere varios departamentos
 npm run closer -- A | B             # el agente conversando con modelo
 npm run incentivos                  # vigencia de FOGAES, subsidios e IVA
-npm run closer -- B --v2            # corre una conversación con el prompt v2.0
+npm run closer -- B --v2 [--crudo]  # una conversación con el prompt v2.0
 npm run auditoria                   # qué rechazó el verificador y con qué norma
 npm run grabar -- A | B             # graba los turnos contra el modelo
 npm run jetbrokers -- diagnostico  # prueba la conexión con el CRM

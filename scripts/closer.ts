@@ -17,9 +17,13 @@ import { proveedorEnVivo, proveedorGrabado, type Grabacion } from "../src/lib/ag
 import { tiendaMemoria } from "../src/lib/datos/memoria";
 import { ANCLA_GRABACION, simularCloser, type GuionCloser } from "../src/lib/simulacion/closer";
 
-function grabacion(guion: GuionCloser, version: "v1" | "v2"): Grabacion {
+function grabacion(guion: GuionCloser, version: "v1" | "v2", crudo: boolean): Grabacion {
   const sufijo = version === "v1" ? "" : `-${version}`;
-  const ruta = join(process.cwd(), "grabaciones", `closer-${guion.toLowerCase()}${sufijo}.json`);
+  const ruta = join(
+    process.cwd(),
+    "grabaciones",
+    `closer-${guion.toLowerCase()}${sufijo}${crudo ? "-crudo" : ""}.json`,
+  );
   return JSON.parse(readFileSync(ruta, "utf8")) as Grabacion;
 }
 
@@ -42,6 +46,7 @@ function envolver(texto: string, ancho = 74, sangria = "  "): string {
 async function principal() {
   const guion = (process.argv.find((arg) => arg === "A" || arg === "B") ?? "A") as GuionCloser;
   const version = process.argv.includes("--v2") ? ("v2" as const) : ("v1" as const);
+  const crudo = process.argv.includes("--crudo");
   const vivo = proveedorEnVivo();
 
   await tiendaMemoria.reiniciar({ proyectos: 8, leads: 2, semilla: 2026 });
@@ -49,11 +54,15 @@ async function principal() {
   const { turnos, resumen } = await simularCloser({
     guion,
     version,
-    proveedor: vivo ?? proveedorGrabado(grabacion(guion, version)),
+    intervencion: crudo ? "ninguna" : "correccion",
+    proveedor: vivo ?? proveedorGrabado(grabacion(guion, version, crudo)),
     ahora: vivo ? new Date() : ANCLA_GRABACION,
   });
 
   console.log(`\nCLOSER ${resumen.nombreVersion.toUpperCase()} · PERFIL ${guion} — ${resumen.etiquetaPerfil.toUpperCase()}`);
+  if (resumen.intervencion === "ninguna") {
+    console.log("Prompt literal, sin apéndice del sistema. La salida va tal cual: la\nverificación solo anota, no corrige.");
+  }
   console.log("=".repeat(78));
   console.log(
     resumen.origen === "modelo"

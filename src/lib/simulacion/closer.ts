@@ -18,6 +18,7 @@ import {
   fichaDeHechos,
   PROMPTS,
   type Incumplimiento,
+  type Intervencion,
   type VersionPrompt,
 } from "@/lib/agente/closer";
 import { unidadesPedidas } from "@/lib/agente/cartera";
@@ -59,6 +60,7 @@ export interface ResumenCloser {
   guion: GuionCloser;
   version: VersionPrompt;
   nombreVersion: string;
+  intervencion: Intervencion;
   leadId: string;
   prospecto: string;
   origen: "modelo" | "grabacion";
@@ -175,6 +177,8 @@ export interface OpcionesCloser {
   ahora?: Date;
   /** Versión del prompt con la que se corre. */
   version?: VersionPrompt;
+  /** "ninguna" corre el prompt literal y deja pasar lo que salga. */
+  intervencion?: Intervencion;
 }
 
 export async function simularCloser(opciones: OpcionesCloser): Promise<ResultadoCloser> {
@@ -212,6 +216,7 @@ export async function simularCloser(opciones: OpcionesCloser): Promise<Resultado
     guion: opciones.guion,
     version: opciones.version ?? "v1",
     nombreVersion: PROMPTS[opciones.version ?? "v1"].nombre,
+    intervencion: opciones.intervencion ?? "correccion",
     leadId: lead.id,
     prospecto: nombre,
     origen,
@@ -342,6 +347,7 @@ export async function simularCloser(opciones: OpcionesCloser): Promise<Resultado
       gastosComunesClp: 90_000,
       alternativas: alcanzaSolo ? alternativas.slice(0, 2) : alternativas,
       incentivos: beneficios,
+      intervencion: opciones.intervencion ?? "correccion",
       ahora: cuandoEntra,
     });
 
@@ -353,6 +359,7 @@ export async function simularCloser(opciones: OpcionesCloser): Promise<Resultado
       canal: paso.canal,
       etiqueta: `${opciones.guion}-${indice + 1}`,
       version: opciones.version ?? "v1",
+      intervencion: opciones.intervencion ?? "correccion",
     });
 
     origen = salida.origen;

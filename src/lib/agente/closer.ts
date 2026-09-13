@@ -74,6 +74,14 @@ export interface DatosFicha {
   alternativas?: Alternativa[];
   /** Beneficios vigentes del registro. Ya filtrados: acá no llega lo vencido. */
   incentivos?: Incentivo[];
+  /**
+   * Con "ninguna", la ficha lleva solo datos.
+   *
+   * El recordatorio de lo que se va a revisar es una instrucción del sistema,
+   * y correr un prompt "tal cual" significa no colarle instrucciones por la
+   * puerta de los datos.
+   */
+  intervencion?: "correccion" | "ninguna";
   ahora: Date;
 }
 
@@ -353,12 +361,14 @@ export function fichaDeHechos(datos: DatosFicha): FichaDeHechos {
     ].join("\n"),
   );
 
-  bloques.push(
-    [
-      `LO QUE EL SISTEMA VA A REVISAR DE TU RESPUESTA`,
-      ...EXIGENCIAS_DE_RESPUESTA.map((exigencia) => `- ${exigencia}`),
-    ].join("\n"),
-  );
+  if (datos.intervencion !== "ninguna") {
+    bloques.push(
+      [
+        `LO QUE EL SISTEMA VA A REVISAR DE TU RESPUESTA`,
+        ...EXIGENCIAS_DE_RESPUESTA.map((exigencia) => `- ${exigencia}`),
+      ].join("\n"),
+    );
+  }
 
   const texto = bloques.join("\n\n");
   // Las horas de la agenda no son montos: sin quitarlas, el "6" de las
@@ -396,6 +406,26 @@ export const PROMPTS: Record<VersionPrompt, { nombre: string; sistema: string }>
   v1: { nombre: "Closer v1", sistema: SISTEMA_CLOSER },
   v2: { nombre: "Closer v2.0", sistema: `${SISTEMA_CLOSER_V2}${CONTRATO_DE_HECHOS}` },
 };
+
+/**
+ * Cuánto interviene el sistema sobre lo que escribe el modelo.
+ *
+ *   correccion  el prompt lleva el apéndice de hechos y, si la respuesta
+ *               incumple, se le devuelve al modelo para que la rehaga
+ *   ninguna     el prompt va literal y la respuesta sale tal cual
+ *
+ * "ninguna" existe para poder ver qué produce un prompt por sí solo. La
+ * verificación igual corre, pero solo anota: no cambia una coma.
+ */
+export type Intervencion = "correccion" | "ninguna";
+
+/** El prompt como se envía, según cuánto intervenga el sistema. */
+export function sistemaDe(version: VersionPrompt, intervencion: Intervencion): string {
+  if (intervencion === "ninguna") {
+    return version === "v2" ? SISTEMA_CLOSER_V2 : SISTEMA_CLOSER;
+  }
+  return PROMPTS[version].sistema;
+}
 
 export interface Incumplimiento {
   regla: string;
@@ -438,6 +468,8 @@ export interface ContextoTurno {
   etiqueta: string;
   /** Prompt con el que se corre este turno. Por defecto, v1. */
   version?: VersionPrompt;
+  /** Por defecto el sistema corrige; "ninguna" deja pasar lo que salga. */
+  intervencion?: Intervencion;
 }
 
 export function peticionDelTurno(contexto: ContextoTurno): PeticionModelo {
@@ -450,7 +482,7 @@ export function peticionDelTurno(contexto: ContextoTurno): PeticionModelo {
 
   return {
     etiqueta: contexto.etiqueta,
-    sistema: PROMPTS[contexto.version ?? "v1"].sistema,
+    sistema: sistemaDe(contexto.version ?? "v1", contexto.intervencion ?? "correccion"),
     esfuerzo: "medium",
     maxTokens: 3000,
     mensajes: [
@@ -624,6 +656,10 @@ export async function turnoDelCloser(
       ...historial,
       contexto.mensajeDelProspecto,
     ]);
+
+    // Sin intervención, lo que salió es lo que se envía: los problemas se
+    // devuelven como observación, no como corrección.
+    if (contexto.intervencion === "ninguna") return { salida, problemas, reintentos };
 
     // Una sola corrección. Si vuelve a incumplir, la conversación la toma una
     // persona: insistir con el modelo sale más caro que un ejecutivo.
