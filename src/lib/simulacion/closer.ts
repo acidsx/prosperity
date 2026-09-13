@@ -40,7 +40,7 @@ import {
 import { nuevoLead, nuevoMensaje } from "@/lib/dominio/fabricas";
 import type { Lead, PerfilFinanciero } from "@/lib/dominio/tipos";
 
-export type GuionCloser = "A" | "B";
+export type GuionCloser = "A" | "B" | "C";
 
 export interface TurnoCloser {
   dia: number;
@@ -96,14 +96,14 @@ interface PasoGuion {
 const GUION_A: PasoGuion[] = [
   {
     dia: 0,
-    texto: "Hola, vi la publicación de ustedes. ¿Me pueden dar más información?",
+    texto: "hola! vi el reel del depto en su insta 😊 sigue disponible?",
     canal: "whatsapp",
-    nota: "No dice para qué la quiere. Acá corresponde la pregunta de radar.",
+    nota: "Entra por redes, informal y sin decir a qué viene.",
   },
   {
     dia: 0,
     texto:
-      "Para vivir yo, sería mi primer departamento. La verdad me da miedo equivocarme. Gano $1.800.000 líquidos con contrato indefinido y tengo $18.000.000 ahorrados.",
+      "Para vivir yo, sería mi primera compra. Igual me da cosa equivocarme. Gano $1.800.000 líquidos con contrato indefinido y tengo $18.000.000 ahorrados.",
     canal: "whatsapp",
     nota: "Perfil A confirmado. Desde acá el protocolo cambia.",
   },
@@ -129,9 +129,10 @@ const GUION_A: PasoGuion[] = [
 const GUION_B: PasoGuion[] = [
   {
     dia: 0,
-    texto: "Buenas. Tengo capital disponible y quiero entrar al rubro inmobiliario. ¿Qué tienen?",
-    canal: "whatsapp",
-    nota: "Tampoco dice el objetivo. Misma pregunta de radar, otro resultado.",
+    texto:
+      "Estimados: tengo capital disponible y estoy evaluando entrar a renta residencial. ¿Qué stock manejan y en qué comunas? Quedo atento.",
+    canal: "email",
+    nota: "Entra formal y por correo. Misma pregunta de radar, otro resultado.",
   },
   {
     dia: 0,
@@ -142,9 +143,10 @@ const GUION_B: PasoGuion[] = [
   },
   {
     dia: 1,
-    texto: "¿Cuál es el cap rate? ¿Y cómo viene la vacancia histórica del sector?",
+    texto:
+      "¿Y cómo hago para las 4 si el banco me va a evaluar por una? Me hablaron de estructurar varios créditos en paralelo. ¿Ustedes hacen eso?",
     canal: "whatsapp",
-    nota: "La vacancia histórica NO está en la ficha. Es la prueba del hard stop 1.",
+    nota: "Acá el v2.5 ofrece la Estructuración Simultánea. Es el turno que estrena esta versión.",
   },
   {
     dia: 2,
@@ -169,6 +171,40 @@ const GUION_B: PasoGuion[] = [
  */
 export const ANCLA_GRABACION = new Date("2026-09-07T13:00:00-03:00");
 
+/**
+ * El cliente problemático: hostil, desconfiado y regateando.
+ *
+ * No es un caso de borde. Es el que llega después de que dos corredoras le
+ * prometieron cosas que no cumplieron, y el que más rápido expone si un
+ * agente tiene algo que decir o solo tiene guion.
+ */
+const GUION_C: PasoGuion[] = [
+  {
+    dia: 0,
+    texto:
+      "Buenas. Antes que nada te aviso: ya me mintieron dos corredoras. Si me vas a hablar de oportunidad única cortamos aquí.",
+    canal: "whatsapp",
+    nota: "Abre a la defensiva y prohíbe explícitamente el gancho de escasez.",
+  },
+  {
+    dia: 0,
+    texto:
+      "Para vivir. Y otra cosa: quiero descuento. Vi uno parecido 400 UF más barato. Igualan o me voy.",
+    canal: "whatsapp",
+    nota: "Perfil A, pero negociando precio de entrada.",
+  },
+  {
+    dia: 1,
+    texto: "¿Estoy hablando con un bot? Porque si es un bot cierro el chat altiro.",
+    canal: "whatsapp",
+  },
+  {
+    dia: 2,
+    texto: "Ya. Dame una razón para no irme a la competencia.",
+    canal: "whatsapp",
+  },
+];
+
 export interface OpcionesCloser {
   guion: GuionCloser;
   proveedor: ProveedorModelo;
@@ -183,7 +219,8 @@ export interface OpcionesCloser {
 
 export async function simularCloser(opciones: OpcionesCloser): Promise<ResultadoCloser> {
   const db = tienda();
-  const guion = opciones.guion === "A" ? GUION_A : GUION_B;
+  const guion =
+    opciones.guion === "A" ? GUION_A : opciones.guion === "B" ? GUION_B : GUION_C;
   const turnos: TurnoCloser[] = [];
 
   const inicio = opciones.ahora ?? ANCLA_GRABACION;
@@ -192,12 +229,18 @@ export async function simularCloser(opciones: OpcionesCloser): Promise<Resultado
 
   const [proyectos, uf] = await Promise.all([inventario(), valorUf()]);
 
-  const nombre = opciones.guion === "A" ? "Sofía Reyes" : "Rodrigo Salazar";
+  const identidades: Record<GuionCloser, { nombre: string; email: string; telefono: string; canal: Lead["canal"] }> = {
+    A: { nombre: "Sofía Reyes", email: "sofia.reyes@gmail.com", telefono: "+56 9 5544 3322", canal: "portal_inmobiliario" },
+    B: { nombre: "Rodrigo Salazar", email: "rodrigo.salazar@gmail.com", telefono: "+56 9 7788 1122", canal: "portal_inmobiliario" },
+    C: { nombre: "Patricio Vergara", email: "p.vergara@outlook.cl", telefono: "+56 9 6611 4477", canal: "whatsapp" },
+  };
+  const identidad = identidades[opciones.guion];
+  const nombre = identidad.nombre;
   const lead: Lead = nuevoLead({
     nombre,
-    email: opciones.guion === "A" ? "sofia.reyes@gmail.com" : "rodrigo.salazar@gmail.com",
-    telefono: opciones.guion === "A" ? "+56 9 5544 3322" : "+56 9 7788 1122",
-    canal: "portal_inmobiliario",
+    email: identidad.email,
+    telefono: identidad.telefono,
+    canal: identidad.canal,
     ejecutivoId: opciones.ejecutivoId ?? null,
     mensajeInicial: guion[0].texto,
     creadoEn: fechaDe(0).toISOString(),

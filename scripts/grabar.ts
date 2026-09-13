@@ -29,7 +29,8 @@ import { simularCloser, type GuionCloser } from "../src/lib/simulacion/closer";
 
 const CARPETA = join(process.cwd(), "grabaciones");
 
-function versionElegida(): "v1" | "v2" {
+function versionElegida(): "v1" | "v2" | "v25" {
+  if (process.argv.includes("--v25")) return "v25";
   return process.argv.includes("--v2") ? "v2" : "v1";
 }
 
@@ -128,7 +129,7 @@ function proveedorQueContinua(
 }
 
 async function principal() {
-  const guion = (process.argv.find((arg) => arg === "A" || arg === "B") ?? "A") as GuionCloser;
+  const guion = (process.argv.find((arg) => arg === "A" || arg === "B" || arg === "C") ?? "A") as GuionCloser;
   const grabacion = leer(guion);
   const enVivo = proveedorEnVivo();
 

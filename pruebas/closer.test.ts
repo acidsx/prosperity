@@ -340,7 +340,7 @@ describe("conversaciones grabadas", () => {
     assert.ok(problemas.some((problema) => /ofrece una alternativa/.test(problema.regla)));
   });
 
-  it("el perfil B recibe números y no le inventan la vacancia del sector", async () => {
+  it("al preguntar por multicrédito, no ofrece una deuda invisible", async () => {
     await tiendaMemoria.reiniciar({ proyectos: 8, leads: 2, semilla: 2026 });
     const { turnos } = await simularCloser({
       guion: "B",
@@ -353,8 +353,9 @@ describe("conversaciones grabadas", () => {
       .join("\n");
 
     assert.match(delAgente, /neta/i, "nunca dio la rentabilidad neta");
-    // El prompt pide vender con vacancia histórica; la ficha no la tiene.
-    assert.match(delAgente, /no la tengo con respaldo|no te la voy a estimar/i);
-    assert.doesNotMatch(delAgente, /vacancia (casi |prácticamente )?cero/i);
-  });
-});
+    // El prospecto pregunta por estructurar varios créditos en paralelo. La
+    // respuesta no puede ser que la deuda no se ve: desde abril de 2026 el
+    // registro consolidado la cruza igual.
+    assert.match(delAgente, /se declara todo lo que está en curso|registro consolidado/i);
+    assert.doesNotMatch(delAgente, /no se informa|deuda invisible|capacidad crediticia limpia/i);
+  });});

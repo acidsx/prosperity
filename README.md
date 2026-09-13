@@ -337,9 +337,18 @@ sin corregirles nada: si se editan las frases problemáticas, la prueba deja de 
 
 ```bash
 npm run closer -- B --v2            # con el apéndice del sistema y corrección
-npm run closer -- A --v2 --crudo    # el prompt literal, sin corregir la salida
+npm run closer -- A --v25 --crudo   # el prompt literal, sin corregir la salida
 npm run auditoria                   # qué observó el verificador, con su norma
 ```
+
+Hay tres guiones de prospecto, con aperturas deliberadamente distintas para que el radar no
+se pruebe siempre contra el mismo saludo:
+
+| | Quién | Cómo entra |
+|---|---|---|
+| `A` | Sofía Reyes, primera compra | Por redes, informal, sin decir a qué viene |
+| `B` | Rodrigo Salazar, inversor | Por correo, formal, pidiendo stock |
+| `C` | Patricio Vergara, cliente problemático | Hostil, prohibiendo de entrada el gancho de escasez |
 
 Dos modos de intervención:
 

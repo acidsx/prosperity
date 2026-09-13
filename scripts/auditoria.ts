@@ -36,21 +36,38 @@ function grabacion(guion: GuionCloser, version: VersionPrompt, crudo: boolean): 
 
 async function principal() {
   const corridas: unknown[] = [];
+  const desactualizadas: Array<Record<string, string>> = [];
 
-  for (const version of ["v1", "v2"] as VersionPrompt[]) {
+  for (const version of ["v1", "v2", "v25"] as VersionPrompt[]) {
     for (const crudo of [false, true]) {
-      for (const guion of ["A", "B"] as GuionCloser[]) {
+      for (const guion of ["A", "B", "C"] as GuionCloser[]) {
       const grabada = grabacion(guion, version, crudo);
       if (!grabada) continue;
 
       await tiendaMemoria.reiniciar({ proyectos: 8, leads: 2, semilla: 2026 });
-      const { turnos, resumen } = await simularCloser({
-        guion,
-        version,
-        intervencion: crudo ? "ninguna" : "correccion",
-        proveedor: proveedorGrabado(grabada),
-        ahora: ANCLA_GRABACION,
-      });
+
+      // Una grabación vieja no se muestra ni se arregla sola: se reporta.
+      // Cambió el guion del prospecto, así que esas respuestas ya no
+      // corresponden a la conversación que hoy tendría el agente.
+      let corrida;
+      try {
+        corrida = await simularCloser({
+          guion,
+          version,
+          intervencion: crudo ? "ninguna" : "correccion",
+          proveedor: proveedorGrabado(grabada),
+          ahora: ANCLA_GRABACION,
+        });
+      } catch (error) {
+        desactualizadas.push({
+          version,
+          guion,
+          intervencion: crudo ? "ninguna" : "correccion",
+          motivo: error instanceof Error ? error.message : String(error),
+        });
+        continue;
+      }
+      const { turnos, resumen } = corrida;
 
       // Lo que el modelo escribió antes de que lo corrigieran: vive en la
       // grabación, en el turno de corrección, y es lo que hay que mostrar.
@@ -86,7 +103,7 @@ async function principal() {
   }
 
   process.stdout.write(
-    JSON.stringify({ corridas, afirmaciones: AFIRMACIONES_PROHIBIDAS.map((a) => ({
+    JSON.stringify({ corridas, desactualizadas, afirmaciones: AFIRMACIONES_PROHIBIDAS.map((a) => ({
       id: a.id, afirmacion: a.afirmacion, porQue: a.porQue, norma: a.norma,
       fuente: a.fuente, gravedad: a.gravedad, enSuLugar: a.enSuLugar,
     })) }, null, 2),
