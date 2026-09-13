@@ -7,3 +7,7 @@ build/
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+
+# Archivos de trabajo de la grabación del closer
+grabaciones/pendiente.txt
+grabaciones/respuesta.txt

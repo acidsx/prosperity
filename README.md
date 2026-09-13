@@ -234,6 +234,54 @@ El guion incluye dos momentos que valen la pena:
 La simulación también funciona como prueba de integración del recorrido completo: si
 algo se rompe entre la captación y el cierre, sus ocho pruebas lo detectan.
 
+## El closer: el agente conversando con modelo
+
+Las simulaciones anteriores detectan la objeción con expresiones regulares y responden
+con texto escrito a mano. Eso es un bot con buen guion: contesta lo previsto y nada más.
+El closer mueve la conversación al modelo y deja al código haciendo lo que el código hace
+mejor.
+
+```bash
+npm run closer -- A   # buscador de hogar indeciso
+npm run closer -- B   # inversor de alto patrimonio
+```
+
+La división de trabajo:
+
+| | quién decide |
+|---|---|
+| Qué decir, en qué orden, con qué tono, cómo cerrar | el modelo (`SISTEMA_CLOSER`) |
+| Qué es verdad: precios, capacidad, dividendo, agenda | el código (`fichaDeHechos`) |
+| Si lo que escribió se puede enviar | el código (`verificarRespuesta`) |
+
+**El modelo nunca calcula ni recuerda una cifra.** Cada turno recibe una FICHA DE HECHOS
+armada por el código — las unidades reales del inventario, la capacidad calculada con
+criterios de la banca, la economía del arriendo, los bloques de agenda — y solo puede usar
+números que estén ahí. Después de generar, `verificarRespuesta` revisa la salida cifra por
+cifra contra la ficha. Si algo no cuadra, se le devuelve al modelo lo que incumplió y
+tiene una corrección; si vuelve a incumplir, la conversación la toma una persona.
+
+Lo que el verificador rechaza:
+
+- una cifra que no está en la ficha (el caso típico: un "5,5% de rentabilidad" que suena
+  bien y no salió de ningún cálculo);
+- publicar la rentabilidad bruta sin la neta;
+- decir que la propiedad "se paga sola" cuando la ficha muestra flujo negativo;
+- prometer la aprobación del crédito;
+- ofrecer un descuento que el agente no aprueba;
+- un mensaje que no cierra con una pregunta.
+
+### Grabación y reproducción
+
+Una conversación con modelo no se puede probar con assertions ni demostrar sin gastar
+tokens. `npm run grabar -- A` graba los turnos contra el modelo y guarda **el prompt
+completo junto a la respuesta**. Reproducir verifica la huella del prompt: si el prompt
+cambió, la corrida falla en vez de mostrar respuestas que ya no corresponden.
+
+Sin `ANTHROPIC_API_KEY` las simulaciones reproducen la grabación **y lo dicen en pantalla**.
+Con la credencial definida corren en vivo. Confundir una demostración grabada con una
+corrida real es la forma más fácil de creerle a un agente más de lo que corresponde.
+
 ## Simular un comprador indeciso
 
 ```bash
@@ -433,11 +481,13 @@ Responde con la calificación, el mensaje redactado y los horarios propuestos.
 ```bash
 npm run dev      # desarrollo
 npm run build    # build de producción
-npm run prueba   # 209 pruebas: API, finanzas, inversión, calce, frenos, conversación, objeciones, cierre
+npm run prueba   # 241 pruebas: API, finanzas, inversión, calce, frenos, conversación, objeciones, cierre
 npm run simular  # una venta completa, narrada paso a paso
 npm run simular -- --conversacion  # solo la conversación con el comprador
 npm run simular -- --indeciso      # un comprador indeciso, temeroso y lleno de dudas
 npm run simular -- --inversionista # un inversionista que quiere varios departamentos
+npm run closer -- A | B             # el agente conversando con modelo
+npm run grabar -- A | B             # graba los turnos contra el modelo
 npm run jetbrokers -- diagnostico  # prueba la conexión con el CRM
 npm run usuarios # alta de usuarios (requiere Supabase)
 npm run tipos    # typecheck
