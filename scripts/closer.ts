@@ -17,8 +17,9 @@ import { proveedorEnVivo, proveedorGrabado, type Grabacion } from "../src/lib/ag
 import { tiendaMemoria } from "../src/lib/datos/memoria";
 import { ANCLA_GRABACION, simularCloser, type GuionCloser } from "../src/lib/simulacion/closer";
 
-function grabacion(guion: GuionCloser): Grabacion {
-  const ruta = join(process.cwd(), "grabaciones", `closer-${guion.toLowerCase()}.json`);
+function grabacion(guion: GuionCloser, version: "v1" | "v2"): Grabacion {
+  const sufijo = version === "v1" ? "" : `-${version}`;
+  const ruta = join(process.cwd(), "grabaciones", `closer-${guion.toLowerCase()}${sufijo}.json`);
   return JSON.parse(readFileSync(ruta, "utf8")) as Grabacion;
 }
 
@@ -40,17 +41,19 @@ function envolver(texto: string, ancho = 74, sangria = "  "): string {
 
 async function principal() {
   const guion = (process.argv.find((arg) => arg === "A" || arg === "B") ?? "A") as GuionCloser;
+  const version = process.argv.includes("--v2") ? ("v2" as const) : ("v1" as const);
   const vivo = proveedorEnVivo();
 
   await tiendaMemoria.reiniciar({ proyectos: 8, leads: 2, semilla: 2026 });
 
   const { turnos, resumen } = await simularCloser({
     guion,
-    proveedor: vivo ?? proveedorGrabado(grabacion(guion)),
+    version,
+    proveedor: vivo ?? proveedorGrabado(grabacion(guion, version)),
     ahora: vivo ? new Date() : ANCLA_GRABACION,
   });
 
-  console.log(`\nCLOSER · PERFIL ${guion} — ${resumen.etiquetaPerfil.toUpperCase()}`);
+  console.log(`\nCLOSER ${resumen.nombreVersion.toUpperCase()} · PERFIL ${guion} — ${resumen.etiquetaPerfil.toUpperCase()}`);
   console.log("=".repeat(78));
   console.log(
     resumen.origen === "modelo"
@@ -73,6 +76,8 @@ async function principal() {
     }
     for (const problema of turno.problemas) {
       console.log(`  ⚠ ${problema.regla}: ${problema.detalle}`);
+      if (problema.norma) console.log(`    Norma: ${problema.norma}`);
+      if (problema.enSuLugar) console.log(`    En su lugar: ${problema.enSuLugar}`);
     }
   }
 
@@ -93,6 +98,7 @@ async function principal() {
   );
   for (const problema of resumen.incumplimientos) {
     console.log(`    - ${problema.regla}: ${problema.detalle}`);
+    if (problema.norma) console.log(`      Norma: ${problema.norma}`);
   }
   console.log("");
 }

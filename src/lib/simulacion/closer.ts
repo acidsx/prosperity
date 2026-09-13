@@ -13,7 +13,13 @@
 
 import "server-only";
 
-import { turnoDelCloser, fichaDeHechos, type Incumplimiento } from "@/lib/agente/closer";
+import {
+  turnoDelCloser,
+  fichaDeHechos,
+  PROMPTS,
+  type Incumplimiento,
+  type VersionPrompt,
+} from "@/lib/agente/closer";
 import { unidadesPedidas } from "@/lib/agente/cartera";
 import { extraerPerfilHeuristico } from "@/lib/agente/heuristica";
 import { buscarCandidatos } from "@/lib/agente/matching";
@@ -51,6 +57,8 @@ export interface TurnoCloser {
 
 export interface ResumenCloser {
   guion: GuionCloser;
+  version: VersionPrompt;
+  nombreVersion: string;
   leadId: string;
   prospecto: string;
   origen: "modelo" | "grabacion";
@@ -165,6 +173,8 @@ export interface OpcionesCloser {
   ejecutivoId?: string | null;
   /** Momento desde el que corre la conversación. Por defecto, el ancla. */
   ahora?: Date;
+  /** Versión del prompt con la que se corre. */
+  version?: VersionPrompt;
 }
 
 export async function simularCloser(opciones: OpcionesCloser): Promise<ResultadoCloser> {
@@ -200,6 +210,8 @@ export async function simularCloser(opciones: OpcionesCloser): Promise<Resultado
 
   const resumen: ResumenCloser = {
     guion: opciones.guion,
+    version: opciones.version ?? "v1",
+    nombreVersion: PROMPTS[opciones.version ?? "v1"].nombre,
     leadId: lead.id,
     prospecto: nombre,
     origen,
@@ -340,6 +352,7 @@ export async function simularCloser(opciones: OpcionesCloser): Promise<Resultado
       mensajeDelProspecto: paso.texto,
       canal: paso.canal,
       etiqueta: `${opciones.guion}-${indice + 1}`,
+      version: opciones.version ?? "v1",
     });
 
     origen = salida.origen;

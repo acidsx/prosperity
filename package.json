@@ -15,7 +15,8 @@
     "grabar": "tsx --conditions=react-server scripts/grabar.ts",
     "closer": "tsx --conditions=react-server scripts/closer.ts",
     "mockup-datos": "tsx --conditions=react-server scripts/mockup-datos.ts",
-    "incentivos": "tsx --conditions=react-server scripts/incentivos.ts"
+    "incentivos": "tsx --conditions=react-server scripts/incentivos.ts",
+    "auditoria": "tsx --conditions=react-server scripts/auditoria.ts"
   },
   "repository": {
     "type": "git",

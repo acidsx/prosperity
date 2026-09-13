@@ -21,6 +21,8 @@ import {
   SISTEMA_CLOSER,
   type PerfilProspecto,
 } from "@/lib/agente/persona";
+import { CONTRATO_DE_HECHOS, SISTEMA_CLOSER_V2 } from "@/lib/agente/persona-v2";
+import { afirmacionesProhibidasEn } from "@/lib/dominio/afirmaciones";
 import type { PeticionModelo, ProveedorModelo, RespuestaModelo } from "@/lib/agente/modelo";
 import {
   formatearClp,
@@ -131,13 +133,22 @@ export function cifrasAVerificar(texto: string): number[] {
   return [...new Set([...porcentajes, ...montos])];
 }
 
-/** Dos cifras son la misma si coinciden al redondear a la unidad. */
+/**
+ * Si una cifra del mensaje corresponde a una de la ficha.
+ *
+ * La tolerancia existe para un caso concreto: el modelo escribe "UF 2.687"
+ * donde la ficha dice 2686,56. Pero aplicada a números chicos se come el
+ * problema que debía atrapar — con redondeo a la unidad, un "5,5%" inventado
+ * calzaba con el 6 de las "6:00 p. m." de la agenda. Por eso el redondeo
+ * solo vale para montos, y lo chico tiene que calzar casi exacto.
+ */
 function coincide(valor: number, permitidas: Set<number>): boolean {
   if (permitidas.has(valor)) return true;
   for (const permitida of permitidas) {
-    if (Math.abs(permitida - valor) < 0.51) return true;
-    // El modelo puede escribir "UF 2.687" donde la ficha dice 2686,56.
-    if (Math.round(permitida) === Math.round(valor)) return true;
+    if (Math.abs(permitida - valor) <= 0.01) return true;
+    if (valor >= 100 && permitida >= 100 && Math.round(permitida) === Math.round(valor)) {
+      return true;
+    }
   }
   return false;
 }
@@ -350,7 +361,10 @@ export function fichaDeHechos(datos: DatosFicha): FichaDeHechos {
   );
 
   const texto = bloques.join("\n\n");
-  return { texto, cifras: new Set(cifrasDe(texto)), economia, plan, alternativas };
+  // Las horas de la agenda no son montos: sin quitarlas, el "6" de las
+  // 6:00 p. m. queda autorizando cualquier cifra que redondee a 6.
+  const sinHoras = texto.replace(/\b\d{1,2}:\d{2}\b/g, " ");
+  return { texto, cifras: new Set(cifrasDe(sinHoras)), economia, plan, alternativas };
 }
 
 // ----------------------------------------------------------------- el turno
@@ -369,9 +383,29 @@ export interface SalidaCloser {
   origen: RespuestaModelo["origen"];
 }
 
+export type VersionPrompt = "v1" | "v2";
+
+/**
+ * Los prompts disponibles.
+ *
+ * Se versionan para poder medirlos: correr la misma simulación con cada uno
+ * y comparar qué produce. Los dos reciben el mismo apéndice del sistema, que
+ * es lo que un prompt comercial no puede desactivar.
+ */
+export const PROMPTS: Record<VersionPrompt, { nombre: string; sistema: string }> = {
+  v1: { nombre: "Closer v1", sistema: SISTEMA_CLOSER },
+  v2: { nombre: "Closer v2.0", sistema: `${SISTEMA_CLOSER_V2}${CONTRATO_DE_HECHOS}` },
+};
+
 export interface Incumplimiento {
   regla: string;
   detalle: string;
+  /** La norma que lo impide, cuando el incumplimiento es normativo. */
+  norma?: string;
+  fuente?: string;
+  gravedad?: "critica" | "alta" | "media";
+  /** Qué se podría haber dicho en su lugar. */
+  enSuLugar?: string;
 }
 
 const CONTRATO_SALIDA = `Responde SOLO con un objeto JSON, sin texto antes ni después, con esta forma:
@@ -402,6 +436,8 @@ export interface ContextoTurno {
   mensajeDelProspecto: string;
   canal: "whatsapp" | "email";
   etiqueta: string;
+  /** Prompt con el que se corre este turno. Por defecto, v1. */
+  version?: VersionPrompt;
 }
 
 export function peticionDelTurno(contexto: ContextoTurno): PeticionModelo {
@@ -414,7 +450,7 @@ export function peticionDelTurno(contexto: ContextoTurno): PeticionModelo {
 
   return {
     etiqueta: contexto.etiqueta,
-    sistema: SISTEMA_CLOSER,
+    sistema: PROMPTS[contexto.version ?? "v1"].sistema,
     esfuerzo: "medium",
     maxTokens: 3000,
     mensajes: [
@@ -533,6 +569,19 @@ export function verificarRespuesta(
     });
   }
 
+  // Afirmaciones que ninguna versión del prompt puede habilitar, porque no
+  // las decide el criterio comercial sino la normativa.
+  for (const detectada of afirmacionesProhibidasEn(salida.mensaje)) {
+    problemas.push({
+      regla: "Afirmación prohibida por normativa",
+      detalle: `"${detectada.fragmento}" — ${detectada.afirmacion.afirmacion}`,
+      norma: detectada.afirmacion.norma,
+      fuente: detectada.afirmacion.fuente,
+      gravedad: detectada.afirmacion.gravedad,
+      enSuLugar: detectada.afirmacion.enSuLugar,
+    });
+  }
+
   if (!/\?/.test(salida.mensaje)) {
     problemas.push({
       regla: "Termina con una pregunta de cierre",
@@ -592,8 +641,16 @@ export async function turnoDelCloser(
         {
           rol: "user",
           contenido: `Tu respuesta incumple el contrato:\n${problemas
-            .map((problema) => `- ${problema.regla}: ${problema.detalle}`)
-            .join("\n")}\n\nCorrígela usando solo cifras de la ficha. Devuelve el mismo JSON.`,
+            .map((problema) =>
+              [
+                `- ${problema.regla}: ${problema.detalle}`,
+                problema.norma ? `  Norma: ${problema.norma}` : null,
+                problema.enSuLugar ? `  En su lugar: ${problema.enSuLugar}` : null,
+              ]
+                .filter(Boolean)
+                .join("\n"),
+            )
+            .join("\n")}\n\nCorrígela usando solo cifras de la ficha y sin las afirmaciones señaladas. Devuelve el mismo JSON.`,
         },
       ],
     };

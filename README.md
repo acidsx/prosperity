@@ -330,6 +330,38 @@ cierre la puerta teniendo vías disponibles en la ficha.
 código le pasó al modelo en cada turno, las alternativas que encontró y el resultado de la
 verificación. Se regenera con `npm run mockup-datos > mockup/datos.json`.
 
+### Auditar un prompt
+
+Los prompts se versionan en `src/lib/agente/closer.ts` (`PROMPTS`) y se guardan literales,
+sin corregirles nada: si se editan las frases problemáticas, la prueba deja de medir algo.
+
+```bash
+npm run closer -- B --v2   # corre la conversación con el prompt v2.0
+npm run auditoria          # qué rechazó el verificador, con su norma
+```
+
+`src/lib/dominio/afirmaciones.ts` es la capa que **ningún prompt comercial puede apagar**:
+afirmaciones que el agente no puede hacer, cada una con la norma que lo impide, la fuente y
+qué decir en su lugar. Varias admiten un patrón que las exonera, porque son ciertas cuando
+van con su límite dicho: "el arriendo queda libre de impuesto" es falso a secas y correcto si
+aparece el tope de dos viviendas.
+
+Lo que encontró la prueba del v2.0, con norma en contra:
+
+| Afirmación del prompt | Por qué no se puede decir |
+|---|---|
+| "Vía mutuaria la deuda no se informa al sistema financiero" | La Ley 21.680 creó el Registro de Deuda Consolidada, vigente desde el 01-04-2026: las mutuarias informan en tiempo real |
+| "Todas estas unidades son DFL2, el arriendo queda libre de impuesto" | El beneficio corre para un máximo de 2 viviendas por persona natural; de la tercera en adelante tributa |
+| "Devolución de impuestos directa a tu bolsillo, hasta 16 UTM" | El artículo 55 bis es una rebaja de la base imponible por intereses, tope 8 UTA, por tramos de renta y máximo 2 viviendas |
+| "Los bancos están obligados a financiarte hasta el 90%" | FOGAES es una garantía que habilita, no un mandato; el banco evalúa y los cupos tienen tope |
+| "Vacancia casi cero" y "Cash on Cash sobre 12%" | Cifras que no salen de ningún cálculo: el modelo da 2,44% neta con flujo mensual negativo |
+| "Haz que sienta que posponer le costará millones" | Los plazos reales se dicen con su fecha; lo demás es presión |
+
+La prueba también encontró un agujero en el propio verificador: el "5,5%" inventado del prompt
+calzaba por redondeo con el **6** de las "6:00 p. m." de la agenda. Las horas ya no entran al
+conjunto de cifras permitidas y la tolerancia por redondeo quedó restringida a montos de 100 o
+más.
+
 ### Grabación y reproducción
 
 Una conversación con modelo no se puede probar con assertions ni demostrar sin gastar
@@ -540,13 +572,15 @@ Responde con la calificación, el mensaje redactado y los horarios propuestos.
 ```bash
 npm run dev      # desarrollo
 npm run build    # build de producción
-npm run prueba   # 271 pruebas: API, finanzas, inversión, calce, frenos, conversación, objeciones, cierre
+npm run prueba   # 285 pruebas: API, finanzas, inversión, calce, frenos, conversación, objeciones, cierre
 npm run simular  # una venta completa, narrada paso a paso
 npm run simular -- --conversacion  # solo la conversación con el comprador
 npm run simular -- --indeciso      # un comprador indeciso, temeroso y lleno de dudas
 npm run simular -- --inversionista # un inversionista que quiere varios departamentos
 npm run closer -- A | B             # el agente conversando con modelo
 npm run incentivos                  # vigencia de FOGAES, subsidios e IVA
+npm run closer -- B --v2            # corre una conversación con el prompt v2.0
+npm run auditoria                   # qué rechazó el verificador y con qué norma
 npm run grabar -- A | B             # graba los turnos contra el modelo
 npm run jetbrokers -- diagnostico  # prueba la conexión con el CRM
 npm run usuarios # alta de usuarios (requiere Supabase)

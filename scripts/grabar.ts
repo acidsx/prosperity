@@ -29,8 +29,13 @@ import { simularCloser, type GuionCloser } from "../src/lib/simulacion/closer";
 
 const CARPETA = join(process.cwd(), "grabaciones");
 
-export function rutaGrabacion(guion: GuionCloser): string {
-  return join(CARPETA, `closer-${guion.toLowerCase()}.json`);
+function versionElegida(): "v1" | "v2" {
+  return process.argv.includes("--v2") ? "v2" : "v1";
+}
+
+export function rutaGrabacion(guion: GuionCloser, version = versionElegida()): string {
+  const sufijo = version === "v1" ? "" : `-${version}`;
+  return join(CARPETA, `closer-${guion.toLowerCase()}${sufijo}.json`);
 }
 
 function leer(guion: GuionCloser): Grabacion {
@@ -134,12 +139,13 @@ async function principal() {
   try {
     const { resumen } = await simularCloser({
       guion,
+      version: versionElegida(),
       proveedor: proveedorQueContinua(grabacion, enVivo, respuestaManual),
     });
     guardar(guion, grabacion);
     if (respuestaManual !== null) rmSync(archivoRespuesta, { force: true });
     console.log(
-      `\nGrabación del perfil ${guion} completa: ${grabacion.turnos.length} turnos (${resumen.origen}).`,
+      `\nGrabación del perfil ${guion} (${resumen.nombreVersion}) completa: ${grabacion.turnos.length} turnos (${resumen.origen}).`,
     );
     console.log(`  ${rutaGrabacion(guion)}\n`);
   } catch (error) {
@@ -168,7 +174,7 @@ async function principal() {
       ].join("\n"),
     );
 
-    console.log(`\nFalta el turno ${grabacion.turnos.length + 1} del perfil ${guion}.`);
+    console.log(`\nFalta el turno ${grabacion.turnos.length + 1} del perfil ${guion} (${versionElegida()}).`);
     console.log(`Sin ANTHROPIC_API_KEY no se puede pedir al modelo.`);
     console.log(`El prompt exacto quedó en ${destino}\n`);
     process.exitCode = 2;
