@@ -271,6 +271,34 @@ Lo que el verificador rechaza:
 - ofrecer un descuento que el agente no aprueba;
 - un mensaje que no cierra con una pregunta.
 
+### Cuando no le alcanza: las alternativas
+
+El error que esto corrige es concreto: el agente decía "no tengo nada en tu rango" teniendo
+proyectos con **bono pie** y **pie cero** en el mismo inventario. Decir que no se puede,
+pudiendo, no es prudencia.
+
+`src/lib/dominio/alternativas.ts` calcula las vías que de verdad aplican a cada caso:
+
+| Vía | Qué hace | Qué cuesta |
+|---|---|---|
+| Multicrédito con segundo titular | Suma ambas rentas líquidas para la carga | Los dos quedan obligados por el total, no por mitades |
+| Crédito a 30 años | Mismo dividendo, más capital financiado | Bastante más interés a lo largo del crédito |
+| Bono pie | La inmobiliaria aporta parte del pie | Lo aprueba ella, no el corredor, y va con condiciones |
+| Pie en cuotas | En verde, el pie se paga hasta la entrega | No reduce el pie, lo reparte |
+| Pie cero | Difiere el pie completo | Sube el dividendo: se financia más capital |
+| Subsidio | Se suma al pie y no se devuelve | Hay que postular al llamado; nunca sobre el tope legal |
+| Leasing habitacional | Sin pie ni evaluación hipotecaria | La propiedad no queda a su nombre hasta el final |
+
+Ninguna se ofrece sin su contra, y solo se ofrecen las que existen: si no hay proyectos con
+bono pie en el inventario, no hay bono pie que ofrecer. El verificador rechaza un mensaje que
+cierre la puerta teniendo vías disponibles en la ficha.
+
+### El mockup
+
+`mockup/index.html` muestra las dos conversaciones completas con la ficha de hechos que el
+código le pasó al modelo en cada turno, las alternativas que encontró y el resultado de la
+verificación. Se regenera con `npm run mockup-datos > mockup/datos.json`.
+
 ### Grabación y reproducción
 
 Una conversación con modelo no se puede probar con assertions ni demostrar sin gastar
@@ -481,7 +509,7 @@ Responde con la calificación, el mensaje redactado y los horarios propuestos.
 ```bash
 npm run dev      # desarrollo
 npm run build    # build de producción
-npm run prueba   # 241 pruebas: API, finanzas, inversión, calce, frenos, conversación, objeciones, cierre
+npm run prueba   # 252 pruebas: API, finanzas, inversión, calce, frenos, conversación, objeciones, cierre
 npm run simular  # una venta completa, narrada paso a paso
 npm run simular -- --conversacion  # solo la conversación con el comprador
 npm run simular -- --indeciso      # un comprador indeciso, temeroso y lleno de dudas

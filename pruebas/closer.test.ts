@@ -140,6 +140,7 @@ describe("el verificador de respuestas", () => {
       rentabilidadNetaAnual: 2.44,
     },
     plan: null,
+    alternativas: [],
   };
 
   it("rechaza una cifra que nadie calculó", () => {
@@ -291,6 +292,52 @@ describe("conversaciones grabadas", () => {
       .map((turno) => turno.texto)
       .join("\n");
     assert.doesNotMatch(delAgente, /cap rate|plusval[íi]a proyectada|ROI/i);
+  });
+
+  it("cuando no le alcanza, ofrece una vía en vez de cerrar la puerta", async () => {
+    await tiendaMemoria.reiniciar({ proyectos: 8, leads: 2, semilla: 2026 });
+    const { turnos } = await simularCloser({
+      guion: "A",
+      proveedor: proveedorGrabado(grabacion("A")),
+      ahora: ANCLA_GRABACION,
+    });
+    const delAgente = turnos
+      .filter((turno) => turno.voz === "agente")
+      .map((turno) => turno.texto)
+      .join("\n");
+
+    // Su techo no alcanza para nada del inventario: la conversación no puede
+    // terminar ahí teniendo bono pie y pie en cuotas disponibles.
+    assert.match(delAgente, /bono pie/i, "no ofreció el bono pie");
+    assert.match(delAgente, /pie (en cuotas|cero)/i, "no ofreció una vía para el pie");
+    // Y la contra va dicha, no escondida.
+    assert.match(delAgente, /lo aprueba la inmobiliaria/i);
+  });
+
+  it("el verificador rechaza cerrar la puerta habiendo alternativas", () => {
+    const problemas = verificarRespuesta(
+      { mensaje: "Lo siento, no tengo nada en tu rango. ¿Te aviso si entra algo?" },
+      {
+        texto: "",
+        cifras: new Set<number>(),
+        economia: null,
+        plan: null,
+        alternativas: [
+          {
+            tipo: "bono_pie",
+            titulo: "Bono pie",
+            comoFunciona: "x",
+            requisito: "x",
+            advertencia: "x",
+            precioMaximoUf: 3600,
+            gananciaUf: 1300,
+            efectivoHoyClp: null,
+            proyectos: [],
+          },
+        ],
+      },
+    );
+    assert.ok(problemas.some((problema) => /ofrece una alternativa/.test(problema.regla)));
   });
 
   it("el perfil B recibe números y no le inventan la vacancia del sector", async () => {

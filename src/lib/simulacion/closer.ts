@@ -23,6 +23,11 @@ import { tienda } from "@/lib/datos";
 import { inventario } from "@/lib/datos/inventario";
 import { bloquesDisponibles, valorUf } from "@/lib/dominio/chile";
 import { capacidadCompra } from "@/lib/dominio/financiamiento";
+import {
+  alternativasDeFinanciamiento,
+  mejorAlternativa,
+  type TipoAlternativa,
+} from "@/lib/dominio/alternativas";
 import { nuevoLead, nuevoMensaje } from "@/lib/dominio/fabricas";
 import type { Lead, PerfilFinanciero } from "@/lib/dominio/tipos";
 
@@ -253,8 +258,32 @@ export async function simularCloser(opciones: OpcionesCloser): Promise<Resultado
     const capacidad = capacidadCompra(perfilFinanciero, uf.valor);
     const deseadas = unidadesPedidas(dicho);
 
+    // La unidad más barata del inventario marca la brecha que hay que cerrar:
+    // sin eso no se puede dimensionar un bono pie ni un pie en cuotas.
+    const masBarata = proyectos
+      .flatMap((proyecto) => proyecto.modelos.map((modelo) => modelo.priceFinal))
+      .filter((precio) => precio > 0)
+      .sort((uno, otro) => uno - otro)[0] ?? null;
+
+    const alternativas = alternativasDeFinanciamiento({
+      perfil: perfilFinanciero,
+      capacidadBase: capacidad,
+      valorUfClp: uf.valor,
+      precioObjetivoUf: masBarata,
+      proyectos,
+      ahora: cuandoEntra,
+    });
+
+    // Si con su capacidad actual no entra nada, se busca de nuevo con el techo
+    // que abre la mejor alternativa. Quedarse en "no hay nada en tu rango"
+    // teniendo bono pie y pie cero en el inventario es no hacer el trabajo.
+    const techoBase = capacidad.precioMaximoUf;
+    const laMejor = masBarata ? mejorAlternativa(alternativas, masBarata) : null;
+    const techoAmpliado = Math.max(techoBase ?? 0, laMejor?.precioMaximoUf ?? 0);
+    const alcanzaSolo = (techoBase ?? 0) >= (masBarata ?? Infinity);
+
     const candidatos = buscarCandidatos(proyectos, {
-      presupuestoUf: capacidad.precioMaximoUf,
+      presupuestoUf: techoBase !== null ? Math.max(techoBase, techoAmpliado) : null,
       comunas: extraccion.comunasInteres,
       dormitorios: extraccion.dormitorios,
       banos: null,
@@ -269,11 +298,18 @@ export async function simularCloser(opciones: OpcionesCloser): Promise<Resultado
     const unidades = candidatos
       .filter((candidato) => candidato.precioUf !== null)
       .slice(0, 2)
-      .map((candidato) => ({
-        proyecto: candidato.proyecto,
-        modelo: candidato.modelo,
-        precioUf: Math.round(candidato.precioUf!),
-      }));
+      .map((candidato) => {
+        const precioUf = Math.round(candidato.precioUf!);
+        const entraSolo = techoBase === null || precioUf <= techoBase;
+        return {
+          proyecto: candidato.proyecto,
+          modelo: candidato.modelo,
+          precioUf,
+          requiereAlternativa: entraSolo
+            ? null
+            : ((laMejor?.tipo ?? null) as TipoAlternativa | null),
+        };
+      });
 
     const ficha = fichaDeHechos({
       lead,
@@ -285,6 +321,7 @@ export async function simularCloser(opciones: OpcionesCloser): Promise<Resultado
       bloques: bloquesDisponibles(fechaDe(paso.dia), 3),
       unidadesDeseadas: deseadas,
       gastosComunesClp: 90_000,
+      alternativas: alcanzaSolo ? alternativas.slice(0, 2) : alternativas,
       ahora: cuandoEntra,
     });
 

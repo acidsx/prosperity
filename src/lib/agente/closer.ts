@@ -38,6 +38,7 @@ import {
   type PlanCartera,
 } from "@/lib/dominio/inversion";
 import { PLAZO_ANOS, TASA_ANUAL_REFERENCIA } from "@/lib/dominio/financiamiento";
+import type { Alternativa, TipoAlternativa } from "@/lib/dominio/alternativas";
 import type { Lead, PerfilFinanciero, Proyecto } from "@/lib/dominio/tipos";
 import { superficieUtil } from "@/lib/jetbrokers/mapeo";
 
@@ -45,6 +46,14 @@ export interface UnidadOfrecible {
   proyecto: Proyecto;
   modelo: Proyecto["modelos"][number] | null;
   precioUf: number;
+  /**
+   * Vía que hay que usar para que esta unidad entre.
+   *
+   * null significa que entra con la capacidad que ya tiene. Cualquier otra
+   * cosa hay que decirla junto a la unidad: ofrecer algo que solo alcanza
+   * con multicrédito sin mencionarlo es venderle una expectativa.
+   */
+  requiereAlternativa?: TipoAlternativa | null;
 }
 
 export interface DatosFicha {
@@ -58,6 +67,8 @@ export interface DatosFicha {
   /** Cuántas unidades pidió, si lo dijo. Activa el plan de cartera. */
   unidadesDeseadas?: number | null;
   gastosComunesClp?: number | null;
+  /** Vías para cerrar la brecha cuando la capacidad base no alcanza. */
+  alternativas?: Alternativa[];
   ahora: Date;
 }
 
@@ -67,6 +78,7 @@ export interface FichaDeHechos {
   cifras: Set<number>;
   economia: EconomiaUnidad | null;
   plan: PlanCartera | null;
+  alternativas: Alternativa[];
 }
 
 // --------------------------------------------------------------- las cifras
@@ -201,6 +213,9 @@ export function fichaDeHechos(datos: DatosFicha): FichaDeHechos {
               item.proyecto.entrega ? `entrega ${item.proyecto.entrega}${item.proyecto.anoEntrega ? ` ${item.proyecto.anoEntrega}` : ""}` : null,
               item.proyecto.direccion ? `dirección ${item.proyecto.direccion}` : null,
               item.proyecto.tags.length > 0 ? `atributos: ${item.proyecto.tags.join(", ")}` : null,
+              item.requiereAlternativa
+                ? `OJO: esta unidad está sobre su capacidad actual, solo entra con ${item.requiereAlternativa}`
+                : null,
             ]
               .filter(Boolean)
               .join(" · ");
@@ -257,6 +272,36 @@ export function fichaDeHechos(datos: DatosFicha): FichaDeHechos {
     );
   }
 
+  const alternativas = datos.alternativas ?? [];
+  if (alternativas.length > 0) {
+    bloques.push(
+      [
+        `ALTERNATIVAS DE FINANCIAMIENTO (existen y aplican a este caso)`,
+        `Si no le alcanza con su capacidad actual, NO cierres la conversación: ofrécele estas vías.`,
+        `Cada una lleva su contra, y la contra se dice junto con la vía.`,
+        ...alternativas.map((alternativa, indice) =>
+          [
+            `${indice + 1}. ${alternativa.titulo}`,
+            `   Cómo funciona: ${alternativa.comoFunciona}`,
+            `   Requisito: ${alternativa.requisito}`,
+            `   Contra: ${alternativa.advertencia}`,
+            alternativa.precioMaximoUf
+              ? `   Techo con esta vía: ${formatearUf(alternativa.precioMaximoUf)} (sube ${formatearUf(alternativa.gananciaUf)})`
+              : `   No cambia el techo, cambia la forma de pagar.`,
+            alternativa.efectivoHoyClp !== null
+              ? `   Efectivo necesario hoy: ${formatearClp(alternativa.efectivoHoyClp)}`
+              : null,
+            alternativa.proyectos.length > 0
+              ? `   Disponible en: ${alternativa.proyectos.join(" · ")}`
+              : null,
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        ),
+      ].join("\n"),
+    );
+  }
+
   bloques.push(
     [
       `AGENDA DISPONIBLE (los únicos bloques que puedes ofrecer)`,
@@ -272,7 +317,7 @@ export function fichaDeHechos(datos: DatosFicha): FichaDeHechos {
   );
 
   const texto = bloques.join("\n\n");
-  return { texto, cifras: new Set(cifrasDe(texto)), economia, plan };
+  return { texto, cifras: new Set(cifrasDe(texto)), economia, plan, alternativas };
 }
 
 // ----------------------------------------------------------------- el turno
@@ -420,6 +465,25 @@ export function verificarRespuesta(
     problemas.push({
       regla: "No ofrece descuentos ni negocia precio",
       detalle: "Ofreció una rebaja que no le corresponde aprobar",
+    });
+  }
+
+  // No cerrar la puerta cuando hay vía: el error que esto cubre es un agente
+  // que dice "no tengo nada en tu rango" teniendo bono pie y pie cero en el
+  // inventario.
+  const hayAlternativas = (ficha.alternativas ?? []).length > 0;
+  const cierraLaPuerta =
+    /no tengo (nada|ninguna|unidades?) (en tu rango|que calce)|no hay nada (en tu rango|para ti)|no te alcanza/i.test(
+      salida.mensaje,
+    );
+  const ofreceVia =
+    /multicr[ée]dito|segundo titular|bono pie|pie en cuotas|pie cero|subsidio|leasing|30 a[ñn]os/i.test(
+      salida.mensaje,
+    );
+  if (hayAlternativas && cierraLaPuerta && !ofreceVia) {
+    problemas.push({
+      regla: "Si no le alcanza, ofrece una alternativa de financiamiento",
+      detalle: "Dijo que no hay nada para él teniendo vías disponibles en la ficha",
     });
   }
 

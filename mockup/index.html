@@ -1,0 +1,440 @@
+<title>Closer Inmobiliario Prosperity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root{
+  --papel:#f4f6f7; --superficie:#ffffff; --tinta:#141d26; --tinta-suave:#5d6b7a;
+  --borde:#dfe4e8; --borde-fuerte:#c3ccd4;
+  --acento:#0e6a54; --acento-suave:#e3f0ec; --acento-tinta:#0a4f3e;
+  --alerta:#9e3b26; --alerta-suave:#f8e8e4;
+  --plano:#111c27; --plano-linea:#26374a; --plano-tinta:#c6d4e0; --plano-tenue:#7d8fa1; --plano-luz:#63d2ab;
+  --prospecto:#eef1f4;
+  --sombra:0 1px 2px rgba(20,29,38,.06), 0 8px 24px -16px rgba(20,29,38,.3);
+  --radio:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --papel:#0d151d; --superficie:#141f29; --tinta:#e6edf3; --tinta-suave:#96a6b5;
+    --borde:#24323f; --borde-fuerte:#354757;
+    --acento:#4fc4a1; --acento-suave:#123227; --acento-tinta:#7fd8bb;
+    --alerta:#e08b74; --alerta-suave:#3a2019;
+    --plano:#07101a; --plano-linea:#1e2f3f; --prospecto:#1b2732;
+    --sombra:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --papel:#0d151d; --superficie:#141f29; --tinta:#e6edf3; --tinta-suave:#96a6b5;
+  --borde:#24323f; --borde-fuerte:#354757;
+  --acento:#4fc4a1; --acento-suave:#123227; --acento-tinta:#7fd8bb;
+  --alerta:#e08b74; --alerta-suave:#3a2019;
+  --plano:#07101a; --plano-linea:#1e2f3f; --prospecto:#1b2732;
+  --sombra:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--papel); color:var(--tinta);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+.envoltura{max-width:1180px; margin:0 auto; padding-inline:20px; padding-block:0}
+h1,h2,h3{font-family:Archivo,"IBM Plex Sans",system-ui,sans-serif; text-wrap:balance; margin:0}
+h1{font-size:clamp(1.9rem,1.2rem + 2.4vw,2.9rem); font-weight:700; letter-spacing:-.022em; line-height:1.08}
+h2{font-size:1.35rem; font-weight:600; letter-spacing:-.012em}
+h3{font-size:1rem; font-weight:600; letter-spacing:-.005em}
+p{margin:0}
+a{color:var(--acento-tinta)}
+.eyebrow{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.68rem; font-weight:500;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--tinta-suave);
+}
+
+/* ---------------------------------------------------------------- cabecera */
+header.tapa{border-bottom:1px solid var(--borde); background:var(--superficie)}
+.tapa .envoltura{display:flex; flex-direction:column; gap:16px; padding-block:34px 28px}
+.marca{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
+.marca .punto{width:9px;height:9px;border-radius:50%;background:var(--acento); align-self:center}
+.bajada{max-width:64ch; color:var(--tinta-suave); font-size:1.02rem}
+.aviso{
+  display:flex; gap:10px; align-items:flex-start; max-width:78ch;
+  border-left:3px solid var(--alerta); background:var(--alerta-suave);
+  padding:11px 14px; border-radius:0 var(--radio) var(--radio) 0; font-size:.88rem;
+}
+.aviso strong{color:var(--alerta)}
+
+/* -------------------------------------------------------------- selector */
+.selector{display:flex; gap:8px; flex-wrap:wrap; margin-top:4px}
+.perfil-btn{
+  font:inherit; font-weight:500; cursor:pointer; text-align:left;
+  background:var(--papel); color:var(--tinta); border:1px solid var(--borde-fuerte);
+  border-radius:var(--radio); padding:11px 16px; display:flex; flex-direction:column; gap:2px;
+  transition:border-color .15s, background .15s;
+}
+.perfil-btn:hover{border-color:var(--acento)}
+.perfil-btn .clave{font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--tinta-suave)}
+.perfil-btn[aria-selected="true"]{background:var(--acento); border-color:var(--acento); color:#fff}
+.perfil-btn[aria-selected="true"] .clave{color:rgba(255,255,255,.75)}
+.perfil-btn:focus-visible{outline:2px solid var(--acento); outline-offset:2px}
+
+/* ------------------------------------------------------------------ panel */
+main{padding-block:32px 56px}
+.seccion{margin-top:40px}
+.seccion > .encabezado{display:flex; flex-direction:column; gap:4px; margin-bottom:16px}
+.split{display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:20px; align-items:start}
+@media (max-width:860px){ .split{grid-template-columns:1fr} }
+
+/* --------------------------------------------------------- conversación */
+.hilo{display:flex; flex-direction:column; gap:14px}
+.turno{border:0; background:none; padding:0; font:inherit; text-align:left; width:100%; cursor:pointer; display:flex; flex-direction:column; gap:5px}
+.turno:focus-visible{outline:2px solid var(--acento); outline-offset:3px; border-radius:var(--radio)}
+.meta{display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:.72rem; color:var(--tinta-suave)}
+.quien{font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; font-weight:500}
+.burbuja{
+  padding:12px 15px; border-radius:var(--radio); font-size:.95rem;
+  border:1px solid var(--borde); background:var(--prospecto); color:var(--tinta);
+  transition:border-color .15s, box-shadow .15s;
+}
+.turno.agente{padding-left:clamp(0px,4vw,52px)}
+.turno.agente .burbuja{background:var(--acento-suave); border-color:transparent; color:var(--tinta)}
+.turno.agente .quien{color:var(--acento-tinta)}
+.turno[aria-current="true"] .burbuja{border-color:var(--acento); box-shadow:0 0 0 2px var(--acento-suave)}
+.nota{font-size:.8rem; color:var(--tinta-suave); font-style:italic; padding-left:2px}
+.turno.agente .nota{padding-left:clamp(0px,4vw,52px)}
+.ok-chip{
+  display:inline-flex; align-items:center; gap:5px; font-family:"IBM Plex Mono",monospace;
+  font-size:.64rem; letter-spacing:.06em; color:var(--acento-tinta);
+}
+
+/* ------------------------------------------------------------ la ficha */
+.plano{
+  background:var(--plano); color:var(--plano-tinta); border-radius:var(--radio);
+  position:sticky; top:16px; overflow:hidden; box-shadow:var(--sombra);
+}
+.plano .cabecera{
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+  padding:12px 16px; border-bottom:1px solid var(--plano-linea);
+}
+.plano .cabecera .eyebrow{color:var(--plano-luz)}
+.plano .cabecera .turno-n{font-family:"IBM Plex Mono",monospace; font-size:.7rem; color:var(--plano-tenue)}
+.plano pre{
+  margin:0; padding:16px; max-height:560px; overflow:auto;
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.735rem; line-height:1.6;
+  white-space:pre-wrap; word-break:break-word; color:var(--plano-tinta);
+}
+.plano pre b{color:#fff; font-weight:500}
+.plano pre .alza{color:var(--plano-luz)}
+.plano pre .baja{color:#e8907a}
+
+/* ------------------------------------------------------------ tarjetas */
+.rejilla{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px}
+@media (max-width:820px){ .rejilla{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:520px){ .rejilla{grid-template-columns:1fr} }
+.dato{background:var(--superficie); border:1px solid var(--borde); border-radius:var(--radio); padding:14px 16px; display:flex; flex-direction:column; gap:3px}
+.dato dt{font-family:"IBM Plex Mono",monospace; font-size:.64rem; letter-spacing:.1em; text-transform:uppercase; color:var(--tinta-suave)}
+.dato dd{margin:0; font-size:1.02rem; font-weight:500; font-variant-numeric:tabular-nums}
+.dato dd.grande{font-family:Archivo,sans-serif; font-size:1.6rem; font-weight:600; letter-spacing:-.02em}
+
+/* ---------------------------------------------------------- alternativas */
+.vias{display:flex; flex-direction:column; gap:0; background:var(--superficie); border:1px solid var(--borde); border-radius:var(--radio); overflow:hidden}
+.via{display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1.4fr) auto; gap:18px; padding:16px 18px; align-items:start}
+.via + .via{border-top:1px solid var(--borde)}
+.via .titulo{font-weight:600; display:flex; flex-direction:column; gap:4px}
+.via .como{font-size:.86rem; color:var(--tinta-suave); font-weight:400}
+.via .contra{font-size:.84rem; color:var(--tinta); display:flex; flex-direction:column; gap:4px}
+.via .contra .et{font-family:"IBM Plex Mono",monospace; font-size:.62rem; letter-spacing:.1em; text-transform:uppercase; color:var(--alerta)}
+.via .techo{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap}
+.via .techo .n{font-family:Archivo,sans-serif; font-size:1.15rem; font-weight:600; color:var(--acento-tinta)}
+.via .techo .et{display:block; font-family:"IBM Plex Mono",monospace; font-size:.6rem; letter-spacing:.1em; text-transform:uppercase; color:var(--tinta-suave)}
+@media (max-width:720px){ .via{grid-template-columns:1fr; gap:10px} .via .techo{text-align:left} }
+
+/* -------------------------------------------------------------- reglas */
+.reglas{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:10px}
+.regla{display:flex; gap:10px; align-items:flex-start; background:var(--superficie); border:1px solid var(--borde); border-left:3px solid var(--acento); border-radius:0 var(--radio) var(--radio) 0; padding:12px 14px; font-size:.88rem}
+.regla .marca-ok{color:var(--acento); font-weight:700; line-height:1.4}
+
+/* ------------------------------------------------------------- diagrama */
+.flujo{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px}
+.paso{background:var(--superficie); border:1px solid var(--borde); border-radius:var(--radio); padding:16px; display:flex; flex-direction:column; gap:6px}
+.paso .n{font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.12em; color:var(--acento-tinta)}
+.paso .quien-hace{font-family:Archivo,sans-serif; font-weight:600; font-size:1.05rem}
+.paso p{font-size:.87rem; color:var(--tinta-suave)}
+
+footer{border-top:1px solid var(--borde); margin-top:56px; background:var(--superficie)}
+footer .envoltura{padding-block:26px 34px; display:flex; flex-direction:column; gap:10px}
+code{font-family:"IBM Plex Mono",monospace; font-size:.85em; background:var(--papel); border:1px solid var(--borde); border-radius:5px; padding:1px 5px}
+.oculto{display:none}
+@media (prefers-reduced-motion:reduce){ *{transition:none!important; animation:none!important} }
+</style>
+
+<header class="tapa">
+  <div class="envoltura">
+    <div class="marca">
+      <span class="punto"></span>
+      <span class="eyebrow">Prosperity · Gestor inmobiliario</span>
+    </div>
+    <h1>El closer, conversando</h1>
+    <p class="bajada">Dos prospectos escriben sin decir a qué vienen. El agente los perfila, arma los
+      números con el código y escribe con el modelo. Acá está cada mensaje, y al lado, la ficha de
+      hechos que el código le entregó para escribirlo.</p>
+    <div class="aviso">
+      <div><strong>Conversaciones grabadas.</strong> El prompt, la ficha de hechos y la verificación
+      son los reales y corren en cada prueba. Las respuestas del modelo se grabaron antes, porque este
+      entorno no tiene credencial de API. Con <code>ANTHROPIC_API_KEY</code> el mismo comando corre en vivo.</div>
+    </div>
+    <div class="selector" role="tablist" aria-label="Perfil del prospecto">
+      <button class="perfil-btn" role="tab" id="tab-A" aria-controls="panel" aria-selected="true" data-guion="A">
+        <span class="clave">Protocolo A</span>
+        <span>Sofía Reyes · buscadora de hogar</span>
+      </button>
+      <button class="perfil-btn" role="tab" id="tab-B" aria-controls="panel" aria-selected="false" data-guion="B">
+        <span class="clave">Protocolo B</span>
+        <span>Rodrigo Salazar · inversor</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="envoltura" id="panel" role="tabpanel" aria-labelledby="tab-A">
+
+  <section class="seccion" style="margin-top:0">
+    <div class="encabezado">
+      <span class="eyebrow">Lo que el agente extrajo</span>
+      <h2 id="tituloResumen">Sofía Reyes</h2>
+    </div>
+    <dl class="rejilla" id="resumen"></dl>
+  </section>
+
+  <section class="seccion">
+    <div class="encabezado">
+      <span class="eyebrow">La conversación · toca un mensaje para ver su ficha</span>
+      <h2>Lo que lee el cliente, y lo que sabe el código</h2>
+    </div>
+    <div class="split">
+      <div class="hilo" id="hilo"></div>
+      <div class="plano">
+        <div class="cabecera">
+          <span class="eyebrow">Ficha de hechos</span>
+          <span class="turno-n" id="fichaTurno">turno 1</span>
+        </div>
+        <pre id="ficha"></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="seccion">
+    <div class="encabezado">
+      <span class="eyebrow">Cuando no le alcanza</span>
+      <h2>Las vías que el agente tiene prohibido callar</h2>
+      <p class="bajada" style="margin-top:6px">Decir «con tu renta no llegas» y parar ahí es dejar de
+        trabajar. El código calcula qué vías existen para este caso, cuánto sube el techo con cada una
+        y — siempre — qué le cuesta. Una alternativa sin su contra es una trampa que se paga veinte años.</p>
+    </div>
+    <div class="vias" id="vias"></div>
+  </section>
+
+  <section class="seccion">
+    <div class="encabezado">
+      <span class="eyebrow">Verificación</span>
+      <h2>Lo que el sistema revisa antes de enviar</h2>
+      <p class="bajada" style="margin-top:6px">Cada cifra del mensaje se contrasta contra la ficha. Si
+        algo falla, se le devuelve al modelo lo que incumplió y tiene una corrección; si reincide, la
+        conversación la toma una persona.</p>
+    </div>
+    <div class="reglas" id="reglas"></div>
+  </section>
+
+  <section class="seccion">
+    <div class="encabezado">
+      <span class="eyebrow">Cómo se sostiene</span>
+      <h2>El modelo escribe, el código decide qué es verdad</h2>
+    </div>
+    <div class="flujo">
+      <div class="paso">
+        <span class="n">PASO 1</span>
+        <span class="quien-hace">El código arma la ficha</span>
+        <p>Inventario real, capacidad con criterios de la banca chilena, economía del arriendo,
+          alternativas de financiamiento y bloques de agenda. Todo calculado, nada recordado.</p>
+      </div>
+      <div class="paso">
+        <span class="n">PASO 2</span>
+        <span class="quien-hace">El modelo escribe</span>
+        <p>Con el prompt del closer: radar de perfil, protocolo A o B, y los hard stops. Solo puede
+          usar cifras que estén en la ficha.</p>
+      </div>
+      <div class="paso">
+        <span class="n">PASO 3</span>
+        <span class="quien-hace">El código verifica</span>
+        <p>Cifra por cifra contra la ficha. Rechaza rentabilidad sin la neta, «se paga solo» con flujo
+          negativo, aprobación prometida, descuento ofrecido y cerrar la puerta teniendo vías.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="envoltura">
+    <p class="eyebrow">Para correrlo</p>
+    <p><code>npm run closer -- A</code> · <code>npm run closer -- B</code> — reproduce la grabación, o
+      llama al modelo si hay credencial. <code>npm run grabar -- A</code> vuelve a grabar.</p>
+    <p style="color:var(--tinta-suave); font-size:.86rem">La grabación guarda el prompt completo junto a
+      la respuesta. Si el prompt cambia, reproducir falla en vez de mostrar respuestas que ya no
+      corresponden.</p>
+  </div>
+</footer>
+
+<script type="application/json" id="datos">{"A":{"turnos":[{"dia":0,"voz":"prospecto","texto":"Hola, vi la publicación de ustedes. ¿Me pueden dar más información?","canal":"whatsapp","perfil":null,"nota":"No dice para qué la quiere. Acá corresponde la pregunta de radar.","problemas":[],"reintentos":0},{"dia":0,"voz":"agente","texto":"¡Hola Sofía! Gracias por escribir. Antes de mandarte un catálogo entero y marearte, necesito entender una sola cosa: ¿esta propiedad la estás mirando para mudarte y disfrutarla tú, o tu objetivo principal es rentabilizar un capital y buscar plusvalía? Son dos búsquedas muy distintas y prefiero no hacerte perder tiempo con unidades que no calzan contigo. ¿Cuál de las dos es tu caso?","canal":"whatsapp","perfil":"indeterminado","nota":"Cierre propuesto: definir el objetivo de compra para filtrar el inventario","problemas":[],"reintentos":0},{"dia":0,"voz":"prospecto","texto":"Para vivir yo, sería mi primer departamento. La verdad me da miedo equivocarme. Gano $1.800.000 líquidos con contrato indefinido y tengo $18.000.000 ahorrados.","canal":"whatsapp","perfil":null,"nota":"Perfil A confirmado. Desde acá el protocolo cambia.","problemas":[],"reintentos":0},{"dia":0,"voz":"agente","texto":"Gracias Sofía, con eso soy concreto. Con $1.800.000 líquidos y $18.000.000 de pie, tu tope hoy es UF 2.250, y lo que te frena es el pie, no la renta. En ese rango exacto no tengo unidades. Pero eso no es un no: con el bono pie de la inmobiliaria, que aporta 10% del precio, tu tope sube a UF 3.593 y ahí sí entran dos que te calzan: un 1D de 51 m² en Macul (UF 3.592) y un 2D de 64 m² en La Serena (UF 3.566). La contra te la digo altiro: el bono lo aprueba la inmobiliaria, no yo, y viene con condiciones, así que no lo demos por hecho hasta tenerlo por escrito. ¿Te consigo las dos fichas?","canal":"whatsapp","perfil":"A","nota":"Cierre propuesto: enviar las dos fichas y confirmar el bono pie con la inmobiliaria","problemas":[],"reintentos":0},{"dia":1,"voz":"prospecto","texto":"Es que endeudarme a 25 años me asusta. ¿Y si pierdo la pega?","canal":"whatsapp","perfil":null,"nota":null,"problemas":[],"reintentos":0},{"dia":1,"voz":"agente","texto":"Que te asuste es sano, Sofía: es la decisión financiera más grande que vas a tomar. Tres cosas concretas. Uno: el crédito se prepaga cuando quieras, sin castigo, así que los 25 años son un techo, no una condena. Dos: para el escenario que te preocupa existe el seguro de cesantía asociado al crédito, que cubre cuotas mientras buscas trabajo. Tres: si el dividendo te aprieta, hay proyectos con pie cero donde entras sin desembolso inicial, aunque ahí la cuota sube porque se financia más capital. No te voy a decir que no hay riesgo, porque lo hay. ¿Partimos por la preaprobación, que es gratis y no te compromete?","canal":"whatsapp","perfil":"A","nota":"Cierre propuesto: iniciar la preaprobación sin compromiso","problemas":[],"reintentos":0},{"dia":2,"voz":"prospecto","texto":"¿Y el sector es seguro? ¿Queda cerca del metro?","canal":"whatsapp","perfil":null,"nota":"Conectividad y seguridad: los argumentos del protocolo A.","problemas":[],"reintentos":0},{"dia":2,"voz":"agente","texto":"Buena pregunta, y es la que yo haría primero. Las dos que te separé: el 1D de 51 m² está en Av. Irarrázaval 7602, Macul, y el 2D de 64 m² en Av. Vicuña Mackenna 4565, La Serena. La entrega de ambos es junio 2026. Prefiero que la seguridad del sector la evalúes tú en terreno y no que te la cuente yo por WhatsApp, por eso te propongo verlos. Y algo útil para tu caso: los dos son en verde, así que el pie se puede pagar en cuotas hasta la entrega en vez de juntarlo completo ahora. ¿Vamos a ver el de Macul primero, o prefieres La Serena?","canal":"whatsapp","perfil":"A","nota":"Cierre propuesto: elegir cuál de las dos unidades visitar primero","problemas":[],"reintentos":0},{"dia":3,"voz":"prospecto","texto":"Ya, me convenciste de al menos ir a verlo. ¿Qué días tienes?","canal":"whatsapp","perfil":null,"nota":null,"problemas":[],"reintentos":0},{"dia":3,"voz":"agente","texto":"Perfecto, Sofía. Para no marearte lo dejamos en las dos que ya separé y partimos por el 1D de Macul, UF 3.592, que es el que mejor calza con tu tope ampliado. Tengo el viernes 11 a las 11:00 o a las 16:00. Llega con carnet no más; yo voy con la ficha, el detalle del bono pie por escrito y el cálculo del pie en cuotas hasta la entrega para que lo veas en números y no de palabra. ¿Te tomo las 11:00 o las 16:00?","canal":"whatsapp","perfil":"A","nota":"Cierre propuesto: visita al 1D de Macul el viernes 11 a las 11:00 o 16:00","problemas":[],"reintentos":0}],"resumen":{"guion":"A","leadId":"lead_mu0avhpc1","prospecto":"Sofía Reyes","origen":"grabacion","perfilFinal":"A","etiquetaPerfil":"Buscador de hogar indeciso","turnoEnQueDetectoElPerfil":2,"presupuestoUf":3593,"plazoCompra":"primera vivienda, sin plazo declarado","metodoFinanciamiento":"crédito hipotecario con bono pie y pie en cuotas","cierrePropuesto":"visita al 1D de Macul el viernes 11 a las 11:00 o 16:00","agendo":true,"mensajesDelAgente":5,"correcciones":0,"incumplimientos":[]},"fichas":["FECHA: 07-09-26, 1:00 p. m.\nVALOR UF HOY: $40.000\nTASA HIPOTECARIA DE REFERENCIA: 4,5% anual a 25 años\n\nPROSPECTO\nNombre: Sofía Reyes\nCanal: portal_inmobiliario\nPerfil detectado: todavía sin perfilar — corresponde lanzar la pregunta de radar\n\nLO QUE DECLARÓ\nRenta líquida: no la ha dicho\nAhorro para el pie: no lo ha dicho\n\nCAPACIDAD DE COMPRA (calculada con criterios de la banca chilena)\nPrecio máximo: no estimable todavía\nDividendo máximo mensual: $0\nPie disponible: UF 0\nQué lo limita: sin_datos\nPie mínimo primera vivienda: 20% · para inversión: 30%\n- Falta la renta líquida para estimar el crédito.\n\nUNIDADES DISPONIBLES (las únicas que existen; no hay otras)\n1. Mirador Alto, Macul · tipología C8 4D3B · 87 m² útiles · UF 5.143 · reserva $1.000.000 · entrega Junio 2026 · dirección Av. Irarrázaval 7602 · atributos: Bono pie, Subsidio, Pie cero, Airbnb, Amoblado\n2. Altos del Valle, Colina · tipología B6 4D3B · 120 m² útiles · UF 8.040 · entrega Junio 2029 · dirección Av. Irarrázaval 3209 · atributos: Bono pie, Amoblado, Devolución IVA\n\nALTERNATIVAS DE FINANCIAMIENTO (existen y aplican a este caso)\nSi no le alcanza con su capacidad actual, NO cierres la conversación: ofrécele estas vías.\nCada una lleva su contra, y la contra se dice junto con la vía.\n1. Bono pie de la inmobiliaria\n   Cómo funciona: La inmobiliaria aporta 10% del precio al pie, del orden de UF 269 en una unidad de este valor.\n   Requisito: Solo en los proyectos que lo ofrecen y mientras dure el beneficio.\n   Contra: Lo aprueba la inmobiliaria, no el corredor, y suele venir con condiciones (plazo de reserva, forma de pago). No lo des por hecho hasta tenerlo por escrito.\n   Techo con esta vía: UF 1.343 (sube UF 1.343)\n   Disponible en: Mirador Alto, Macul · Altos del Valle, Colina · Edificio Costanera, La Serena · Vista Cordillera, La Reina · Portal del Sol, San Miguel\n2. Pie en cuotas hasta la entrega\n   Cómo funciona: En proyectos en verde el pie se paga en mensualidades hasta la entrega. En Altos del Valle quedan 33 meses, o sea del orden de $651.287 al mes.\n   Requisito: Capacidad de ahorro mensual sostenida hasta la entrega, además del arriendo que esté pagando hoy.\n   Contra: No reduce el pie, lo reparte. Y si deja de pagar las cuotas, pierde la unidad y parte de lo abonado según lo que diga la promesa.\n   No cambia el techo, cambia la forma de pagar.\n   Efectivo necesario hoy: $651.287\n   Disponible en: Altos del Valle (33 meses) · Vista Cordillera (21 meses) · Portal del Sol (15 meses) · Distrito Central (27 meses) · Altamira (27 meses)\n3. Pie cero\n   Cómo funciona: La inmobiliaria difiere el pie completo hasta la escritura, así que se entra sin desembolso inicial.\n   Requisito: Renta que soporte el dividendo sobre el 100% del precio y aprobación del proyecto.\n   Contra: El dividendo sube porque se financia más capital, y el pie diferido igual hay que pagarlo. Conviene compararlo con juntar pie un año más.\n   No cambia el techo, cambia la forma de pagar.\n   Efectivo necesario hoy: $0\n   Disponible en: Mirador Alto, Macul · Edificio Costanera, La Serena · Portal del Sol, San Miguel\n4. Leasing habitacional\n   Cómo funciona: Una sociedad inmobiliaria compra la propiedad y el comprador paga un arriendo con promesa de compraventa; parte de cada cuota se abona al precio.\n   Requisito: Ingresos acreditables. No exige pie ni evaluación hipotecaria tradicional.\n   Contra: La propiedad no queda a su nombre hasta terminar el contrato, y el costo financiero total es mayor que un crédito hipotecario. Es la última opción, no la primera.\n   No cambia el techo, cambia la forma de pagar.\n   Efectivo necesario hoy: $0\n\nAGENDA DISPONIBLE (los únicos bloques que puedes ofrecer)\n- 08-09-26, 11:00 a. m.\n- 08-09-26, 4:00 p. m.\n- 08-09-26, 6:00 p. m.\n\nLO QUE EL SISTEMA VA A REVISAR DE TU RESPUESTA\n- Toda cifra del mensaje aparece en la ficha de hechos.\n- Si hay rentabilidad, aparece la neta y no solo la bruta.\n- Si el flujo de arriendo es negativo, el mensaje lo dice.\n- No promete la aprobación del crédito.\n- No ofrece descuentos ni negocia precio.\n- Si no le alcanza, ofrece una alternativa de financiamiento en vez de cerrar la puerta.\n- Termina con una pregunta de cierre.","FECHA: 07-09-26, 1:20 p. m.\nVALOR UF HOY: $40.000\nTASA HIPOTECARIA DE REFERENCIA: 4,5% anual a 25 años\n\nPROSPECTO\nNombre: Sofía Reyes\nCanal: portal_inmobiliario\nPerfil detectado: todavía sin perfilar — corresponde lanzar la pregunta de radar\n\nLO QUE DECLARÓ\nRenta líquida: $1.800.000\nAhorro para el pie: $18.000.000\n\nCAPACIDAD DE COMPRA (calculada con criterios de la banca chilena)\nPrecio máximo para UNA propiedad: UF 2.250\nDividendo máximo mensual: $450.000\nPie disponible: UF 450\nQué lo limita: pie\nPie mínimo primera vivienda: 20% · para inversión: 30%\n- El pie es el techo: alcanza para más crédito del que cubre el ahorro.\n\nUNIDADES DISPONIBLES (las únicas que existen; no hay otras)\n1. Mirador Alto, Macul · tipología B2 1D1B · 51 m² útiles · UF 3.592 · reserva $1.000.000 · entrega Junio 2026 · dirección Av. Irarrázaval 7602 · atributos: Bono pie, Subsidio, Pie cero, Airbnb, Amoblado · OJO: esta unidad está sobre su capacidad actual, solo entra con bono_pie\n2. Edificio Costanera, La Serena · tipología B2 2D2B · 64 m² útiles · UF 3.566 · reserva $1.000.000 · entrega Junio 2026 · dirección Av. Vicuña Mackenna 4565 · atributos: Bono pie 10, Subsidio, Pie cero, DFL2, Devolución IVA · OJO: esta unidad está sobre su capacidad actual, solo entra con bono_pie\n\nALTERNATIVAS DE FINANCIAMIENTO (existen y aplican a este caso)\nSi no le alcanza con su capacidad actual, NO cierres la conversación: ofrécele estas vías.\nCada una lleva su contra, y la contra se dice junto con la vía.\n1. Bono pie de la inmobiliaria\n   Cómo funciona: La inmobiliaria aporta 10% del precio al pie, del orden de UF 269 en una unidad de este valor.\n   Requisito: Solo en los proyectos que lo ofrecen y mientras dure el beneficio.\n   Contra: Lo aprueba la inmobiliaria, no el corredor, y suele venir con condiciones (plazo de reserva, forma de pago). No lo des por hecho hasta tenerlo por escrito.\n   Techo con esta vía: UF 3.593 (sube UF 1.343)\n   Disponible en: Mirador Alto, Macul · Altos del Valle, Colina · Edificio Costanera, La Serena · Vista Cordillera, La Reina · Portal del Sol, San Miguel\n2. Pie en cuotas hasta la entrega\n   Cómo funciona: En proyectos en verde el pie se paga en mensualidades hasta la entrega. En Altos del Valle quedan 33 meses, o sea del orden de $651.287 al mes.\n   Requisito: Capacidad de ahorro mensual sostenida hasta la entrega, además del arriendo que esté pagando hoy.\n   Contra: No reduce el pie, lo reparte. Y si deja de pagar las cuotas, pierde la unidad y parte de lo abonado según lo que diga la promesa.\n   No cambia el techo, cambia la forma de pagar.\n   Efectivo necesario hoy: $651.287\n   Disponible en: Altos del Valle (33 meses) · Vista Cordillera (21 meses) · Portal del Sol (15 meses) · Distrito Central (27 meses) · Altamira (27 meses)\n3. Pie cero\n   Cómo funciona: La inmobiliaria difiere el pie completo hasta la escritura, así que se entra sin desembolso inicial.\n   Requisito: Renta que soporte el dividendo sobre el 100% del precio y aprobación del proyecto.\n   Contra: El dividendo sube porque se financia más capital, y el pie diferido igual hay que pagarlo. Conviene compararlo con juntar pie un año más.\n   Techo con esta vía: UF 2.024 (sube UF 0)\n   Efectivo necesario hoy: $0\n   Disponible en: Mirador Alto, Macul · Edificio Costanera, La Serena · Portal del Sol, San Miguel\n\nAGENDA DISPONIBLE (los únicos bloques que puedes ofrecer)\n- 08-09-26, 11:00 a. m.\n- 08-09-26, 4:00 p. m.\n- 08-09-26, 6:00 p. m.\n\nLO QUE EL SISTEMA VA A REVISAR DE TU RESPUESTA\n- Toda cifra del mensaje aparece en la ficha de hechos.\n- Si hay rentabilidad, aparece la neta y no solo la bruta.\n- Si el flujo de arriendo es negativo, el mensaje lo dice.\n- No promete la aprobación del crédito.\n- No ofrece descuentos ni negocia precio.\n- Si no le alcanza, ofrece una alternativa de financiamiento en vez de cerrar la puerta.\n- Termina con una pregunta de cierre.","FECHA: 08-09-26, 1:40 p. m.\nVALOR UF HOY: $40.000\nTASA HIPOTECARIA DE REFERENCIA: 4,5% anual a 25 años\n\nPROSPECTO\nNombre: Sofía Reyes\nCanal: portal_inmobiliario\nPerfil detectado: A\n\nLO QUE DECLARÓ\nRenta líquida: $1.800.000\nAhorro para el pie: $18.000.000\n\nCAPACIDAD DE COMPRA (calculada con criterios de la banca chilena)\nPrecio máximo para UNA propiedad: UF 2.250\nDividendo máximo mensual: $450.000\nPie disponible: UF 450\nQué lo limita: pie\nPie mínimo primera vivienda: 20% · para inversión: 30%\n- El pie es el techo: alcanza para más crédito del que cubre el ahorro.\n\nUNIDADES DISPONIBLES (las únicas que existen; no hay otras)\n1. Mirador Alto, Macul · tipología B2 1D1B · 51 m² útiles · UF 3.592 · reserva $1.000.000 · entrega Junio 2026 · dirección Av. Irarrázaval 7602 · atributos: Bono pie, Subsidio, Pie cero, Airbnb, Amoblado · OJO: esta unidad está sobre su capacidad actual, solo entra con bono_pie\n2. Edificio Costanera, La Serena · tipología B2 2D2B · 64 m² útiles · UF 3.566 · reserva $1.000.000 · entrega Junio 2026 · dirección Av. Vicuña Mackenna 4565 · atributos: Bono pie 10, Subsidio, Pie cero, DFL2, Devolución IVA · OJO: esta unidad está sobre su capacidad actual, solo entra con bono_pie\n\nALTERNATIVAS DE FINANCIAMIENTO (existen y aplican a este caso)\nSi no le alcanza con su capacidad actual, NO cierres la conversación: ofrécele estas vías.\nCada una lleva su contra, y la contra se dice junto con la vía.\n1. Bono pie de la inmobiliaria\n   Cómo funciona: La inmobiliaria aporta 10% del precio al pie, del orden de UF 269 en una unidad de este valor.\n   Requisito: Solo en los proyectos que lo ofrecen y mientras dure el beneficio.\n   Contra: Lo aprueba la inmobiliaria, no el corredor, y suele venir con condiciones (plazo de reserva, forma de pago). No lo des por hecho hasta tenerlo por escrito.\n   Techo con esta vía: UF 3.593 (sube UF 1.343)\n   Disponible en: Mirador Alto, Macul · Altos del Valle, Colina · Edificio Costanera, La Serena · Vista Cordillera, La Reina · Portal del Sol, San Miguel\n2. Pie en cuotas hasta la entrega\n   Cómo funciona: En proyectos en verde el pie se paga en mensualidades hasta la entrega. En Altos del Valle quedan 33 meses, o sea del orden de $651.287 al mes.\n   Requisito: Capacidad de ahorro mensual sostenida hasta la entrega, además del arriendo que esté pagando hoy.\n   Contra: No reduce el pie, lo reparte. Y si deja de pagar las cuotas, pierde la unidad y parte de lo abonado según lo que diga la promesa.\n   No cambia el techo, cambia la forma de pagar.\n   Efectivo necesario hoy: $651.287\n   Disponible en: Altos del Valle (33 meses) · Vista Cordillera (21 meses) · Portal del Sol (15 meses) · Distrito Central (27 meses) · Altamira (27 meses)\n3. Pie cero\n   Cómo funciona: La inmobiliaria difiere el pie completo hasta la escritura, así que se entra sin desembolso inicial.\n   Requisito: Renta que soporte el dividendo sobre el 100% del precio y aprobación del proyecto.\n   Contra: El dividendo sube porque se financia más capital, y el pie diferido igual hay que pagarlo. Conviene compararlo con juntar pie un año más.\n   Techo con esta vía: UF 2.024 (sube UF 0)\n   Efectivo necesario hoy: $0\n   Disponible en: Mirador Alto, Macul · Edificio Costanera, La Serena · Portal del Sol, San Miguel\n\nAGENDA DISPONIBLE (los únicos bloques que puedes ofrecer)\n- 09-09-26, 11:00 a. m.\n- 09-09-26, 4:00 p. m.\n- 09-09-26, 6:00 p. m.\n\nLO QUE EL SISTEMA VA A REVISAR DE TU RESPUESTA\n- Toda cifra del mensaje aparece en la ficha de hechos.\n- Si hay rentabilidad, aparece la neta y no solo la bruta.\n- Si el flujo de arriendo es negativo, el mensaje lo dice.\n- No promete la aprobación del crédito.\n- No ofrece descuentos ni negocia precio.\n- Si no le alcanza, ofrece una alternativa de financiamiento en vez de cerrar la puerta.\n- Termina con una pregunta de cierre.","FECHA: 09-09-26, 2:00 p. m.\nVALOR UF HOY: $40.000\nTASA HIPOTECARIA DE REFERENCIA: 4,5% anual a 25 años\n\nPROSPECTO\nNombre: Sofía Reyes\nCanal: portal_inmobiliario\nPerfil detectado: A\n\nLO QUE DECLARÓ\nRenta líquida: $1.800.000\nAhorro para el pie: $18.000.000\n\nCAPACIDAD DE COMPRA (calculada con criterios de la banca chilena)\nPrecio máximo para UNA propiedad: UF 2.250\nDividendo máximo mensual: $450.000\nPie disponible: UF 450\nQué lo limita: pie\nPie mínimo primera vivienda: 20% · para inversión: 30%\n- El pie es el techo: alcanza para más crédito del que cubre el ahorro.\n\nUNIDADES DISPONIBLES (las únicas que existen; no hay otras)\n1. Mirador Alto, Macul · tipología B2 1D1B · 51 m² útiles · UF 3.592 · reserva $1.000.000 · entrega Junio 2026 · dirección Av. Irarrázaval 7602 · atributos: Bono pie, Subsidio, Pie cero, Airbnb, Amoblado · OJO: esta unidad está sobre su capacidad actual, solo entra con bono_pie\n2. Edificio Costanera, La Serena · tipología B2 2D2B · 64 m² útiles · UF 3.566 · reserva $1.000.000 · entrega Junio 2026 · dirección Av. Vicuña Mackenna 4565 · atributos: Bono pie 10, Subsidio, Pie cero, DFL2, Devolución IVA · OJO: esta unidad está sobre su capacidad actual, solo entra con bono_pie\n\nALTERNATIVAS DE FINANCIAMIENTO (existen y aplican a este caso)\nSi no le alcanza con su capacidad actual, NO cierres la conversación: ofrécele estas vías.\nCada una lleva su contra, y la contra se dice junto con la vía.\n1. Bono pie de la inmobiliaria\n   Cómo funciona: La inmobiliaria aporta 10% del precio al pie, del orden de UF 269 en una unidad de este valor.\n   Requisito: Solo en los proyectos que lo ofrecen y mientras dure el beneficio.\n   Contra: Lo aprueba la inmobiliaria, no el corredor, y suele venir con condiciones (plazo de reserva, forma de pago). No lo des por hecho hasta tenerlo por escrito.\n   Techo con esta vía: UF 3.593 (sube UF 1.343)\n   Disponible en: Mirador Alto, Macul · Altos del Valle, Colina · Edificio Costanera, La Serena · Vista Cordillera, La Reina · Portal del Sol, San Miguel\n2. Pie en cuotas hasta la entrega\n   Cómo funciona: En proyectos en verde el pie se paga en mensualidades hasta la entrega. En Altos del Valle quedan 33 meses, o sea del orden de $651.287 al mes.\n   Requisito: Capacidad de ahorro mensual sostenida hasta la entrega, además del arriendo que esté pagando hoy.\n   Contra: No reduce el pie, lo reparte. Y si deja de pagar las cuotas, pierde la unidad y parte de lo abonado según lo que diga la promesa.\n   No cambia el techo, cambia la forma de pagar.\n   Efectivo necesario hoy: $651.287\n   Disponible en: Altos del Valle (33 meses) · Vista Cordillera (21 meses) · Portal del Sol (15 meses) · Distrito Central (27 meses) · Altamira (27 meses)\n3. Pie cero\n   Cómo funciona: La inmobiliaria difiere el pie completo hasta la escritura, así que se entra sin desembolso inicial.\n   Requisito: Renta que soporte el dividendo sobre el 100% del precio y aprobación del proyecto.\n   Contra: El dividendo sube porque se financia más capital, y el pie diferido igual hay que pagarlo. Conviene compararlo con juntar pie un año más.\n   Techo con esta vía: UF 2.024 (sube UF 0)\n   Efectivo necesario hoy: $0\n   Disponible en: Mirador Alto, Macul · Edificio Costanera, La Serena · Portal del Sol, San Miguel\n\nAGENDA DISPONIBLE (los únicos bloques que puedes ofrecer)\n- 10-09-26, 11:00 a. m.\n- 10-09-26, 4:00 p. m.\n- 10-09-26, 6:00 p. m.\n\nLO QUE EL SISTEMA VA A REVISAR DE TU RESPUESTA\n- Toda cifra del mensaje aparece en la ficha de hechos.\n- Si hay rentabilidad, aparece la neta y no solo la bruta.\n- Si el flujo de arriendo es negativo, el mensaje lo dice.\n- No promete la aprobación del crédito.\n- No ofrece descuentos ni negocia precio.\n- Si no le alcanza, ofrece una alternativa de financiamiento en vez de cerrar la puerta.\n- Termina con una pregunta de cierre.","FECHA: 10-09-26, 2:20 p. m.\nVALOR UF HOY: $40.000\nTASA HIPOTECARIA DE REFERENCIA: 4,5% anual a 25 años\n\nPROSPECTO\nNombre: Sofía Reyes\nCanal: portal_inmobiliario\nPerfil detectado: A\n\nLO QUE DECLARÓ\nRenta líquida: $1.800.000\nAhorro para el pie: $18.000.000\n\nCAPACIDAD DE COMPRA (calculada con criterios de la banca chilena)\nPrecio máximo para UNA propiedad: UF 2.250\nDividendo máximo mensual: $450.000\nPie disponible: UF 450\nQué lo limita: pie\nPie mínimo primera vivienda: 20% · para inversión: 30%\n- El pie es el techo: alcanza para más crédito del que cubre el ahorro.\n\nUNIDADES DISPONIBLES (las únicas que existen; no hay otras)\n1. Mirador Alto, Macul · tipología B2 1D1B · 51 m² útiles · UF 3.592 · reserva $1.000.000 · entrega Junio 2026 · dirección Av. Irarrázaval 7602 · atributos: Bono pie, Subsidio, Pie cero, Airbnb, Amoblado · OJO: esta unidad está sobre su capacidad actual, solo entra con bono_pie\n2. Edificio Costanera, La Serena · tipología B2 2D2B · 64 m² útiles · UF 3.566 · reserva $1.000.000 · entrega Junio 2026 · dirección Av. Vicuña Mackenna 4565 · atributos: Bono pie 10, Subsidio, Pie cero, DFL2, Devolución IVA · OJO: esta unidad está sobre su capacidad actual, solo entra con bono_pie\n\nALTERNATIVAS DE FINANCIAMIENTO (existen y aplican a este caso)\nSi no le alcanza con su capacidad actual, NO cierres la conversación: ofrécele estas vías.\nCada una lleva su contra, y la contra se dice junto con la vía.\n1. Bono pie de la inmobiliaria\n   Cómo funciona: La inmobiliaria aporta 10% del precio al pie, del orden de UF 269 en una unidad de este valor.\n   Requisito: Solo en los proyectos que lo ofrecen y mientras dure el beneficio.\n   Contra: Lo aprueba la inmobiliaria, no el corredor, y suele venir con condiciones (plazo de reserva, forma de pago). No lo des por hecho hasta tenerlo por escrito.\n   Techo con esta vía: UF 3.593 (sube UF 1.343)\n   Disponible en: Mirador Alto, Macul · Altos del Valle, Colina · Edificio Costanera, La Serena · Vista Cordillera, La Reina · Portal del Sol, San Miguel\n2. Pie en cuotas hasta la entrega\n   Cómo funciona: En proyectos en verde el pie se paga en mensualidades hasta la entrega. En Altos del Valle quedan 33 meses, o sea del orden de $651.287 al mes.\n   Requisito: Capacidad de ahorro mensual sostenida hasta la entrega, además del arriendo que esté pagando hoy.\n   Contra: No reduce el pie, lo reparte. Y si deja de pagar las cuotas, pierde la unidad y parte de lo abonado según lo que diga la promesa.\n   No cambia el techo, cambia la forma de pagar.\n   Efectivo necesario hoy: $651.287\n   Disponible en: Altos del Valle (33 meses) · Vista Cordillera (21 meses) · Portal del Sol (15 meses) · Distrito Central (27 meses) · Altamira (27 meses)\n3. Pie cero\n   Cómo funciona: La inmobiliaria difiere el pie completo hasta la escritura, así que se entra sin desembolso inicial.\n   Requisito: Renta que soporte el dividendo sobre el 100% del precio y aprobación del proyecto.\n   Contra: El dividendo sube porque se financia más capital, y el pie diferido igual hay que pagarlo. Conviene compararlo con juntar pie un año más.\n   Techo con esta vía: UF 2.024 (sube UF 0)\n   Efectivo necesario hoy: $0\n   Disponible en: Mirador Alto, Macul · Edificio Costanera, La Serena · Portal del Sol, San Miguel\n\nAGENDA DISPONIBLE (los únicos bloques que puedes ofrecer)\n- 11-09-26, 11:00 a. m.\n- 11-09-26, 4:00 p. m.\n- 11-09-26, 6:00 p. m.\n\nLO QUE EL SISTEMA VA A REVISAR DE TU RESPUESTA\n- Toda cifra del mensaje aparece en la ficha de hechos.\n- Si hay rentabilidad, aparece la neta y no solo la bruta.\n- Si el flujo de arriendo es negativo, el mensaje lo dice.\n- No promete la aprobación del crédito.\n- No ofrece descuentos ni negocia precio.\n- Si no le alcanza, ofrece una alternativa de financiamiento en vez de cerrar la puerta.\n- Termina con una pregunta de cierre."]},"B":{"turnos":[{"dia":0,"voz":"prospecto","texto":"Buenas. Tengo capital disponible y quiero entrar al rubro inmobiliario. ¿Qué tienen?","canal":"whatsapp","perfil":null,"nota":"Tampoco dice el objetivo. Misma pregunta de radar, otro resultado.","problemas":[],"reintentos":0},{"dia":0,"voz":"agente","texto":"Buenas, gracias por escribir. Para no hacerte perder tiempo con material que no te sirve, una sola pregunta antes de mandarte nada: ¿esta compra la estás mirando para mudarte y disfrutarla tú, o tu objetivo principal es rentabilizar el capital y buscar plusvalía? Si es lo segundo, te mando directamente los números que importan (ticket, rentabilidad neta y flujo) en vez de fotos. ¿Cuál es el caso?","canal":"whatsapp","perfil":"indeterminado","nota":"Cierre propuesto: definir objetivo de compra para mandar el material correcto","problemas":[],"reintentos":0},{"dia":0,"voz":"prospecto","texto":"Rentabilizar, no es para vivir. Busco 4 departamentos para arriendo. Gano $4.500.000 líquidos más $1.200.000 en bonos y tengo $70.000.000 disponibles. No tengo créditos hipotecarios.","canal":"whatsapp","perfil":null,"nota":"Perfil B confirmado. Acá entra el plan de cartera.","problemas":[],"reintentos":0},{"dia":0,"voz":"agente","texto":"Vamos a números. Con tus $4.500.000 líquidos y UF 1.750 de pie, la carga te da hasta UF 6.810 en una propiedad. Pediste 4 unidades de UF 3.592 y la cuenta real es 1, no 4: te frenan el pie por unidad y la carga a la vez. Dos vías para mover eso: multicrédito con segundo titular, que sube el techo a UF 8.750 (contra: ambos quedan obligados por el total), y bono pie 10%, que baja el pie por unidad (contra: lo aprueba la inmobiliaria, no yo). Y el dato que casi nadie pone sobre la mesa: el arriendo no cubre el dividendo. Entran $292.247 netos contra $638.896, o sea $346.649 mensuales de tu bolsillo, de los cuales $207.856 son amortización. 4,51% bruta, 2,44% neta. ¿Dossier o llamada con el gerente?","canal":"whatsapp","perfil":"B","nota":"Cierre propuesto: dossier de flujo de caja o llamada con el gerente comercial","problemas":[],"reintentos":0},{"dia":1,"voz":"prospecto","texto":"¿Cuál es el cap rate? ¿Y cómo viene la vacancia histórica del sector?","canal":"whatsapp","perfil":null,"nota":"La vacancia histórica NO está en la ficha. Es la prueba del hard stop 1.","problemas":[],"reintentos":0},{"dia":1,"voz":"agente","texto":"Cap rate con los costos del dueño ya descontados: 2,44% neta anual. La bruta es 4,51%, pero esa no descuenta vacancia, administración, contribuciones ni mantención, así que no es la cifra con la que tú decides. Sobre la vacancia histórica del sector: no la tengo con respaldo en este segundo y no te la voy a estimar de memoria. Se la pido al área de estudios y te llega con fuente y fecha de corte. ¿La incluyo en el dossier, o prefieres la llamada con el gerente comercial y la revisamos juntos en pantalla?","canal":"whatsapp","perfil":"B","nota":"Cierre propuesto: dossier con la vacancia respaldada o llamada con el gerente comercial","problemas":[],"reintentos":0},{"dia":2,"voz":"prospecto","texto":"Si me llevo dos de una vez, ¿hay descuento por volumen?","canal":"whatsapp","perfil":null,"nota":"El precio no lo negocia el agente.","problemas":[],"reintentos":0},{"dia":2,"voz":"agente","texto":"Puede haberlo, pero no soy yo quien lo aprueba: el descuento por volumen lo autoriza la inmobiliaria, así que cualquier número que te tire ahora sería humo. Lo pido formalmente y te llega por escrito. Antes, ordenemos lo otro: hoy la carga y el pie te dan para 1 unidad, no 2. Si de verdad quieres las dos, la vía es multicrédito con un segundo titular o entrar con bono pie para bajar el desembolso por unidad. Cuál de las dos conviene en tu caso lo arma nuestro equipo bancario contigo, no yo por WhatsApp. ¿Te agendo la llamada con el gerente comercial para ver descuento y estructura de una vez?","canal":"whatsapp","perfil":"B","nota":"Cierre propuesto: llamada con el gerente comercial para descuento y estructura de las dos unidades","problemas":[],"reintentos":0},{"dia":3,"voz":"prospecto","texto":"Bien. Mándame el dossier de flujo y coordinemos la llamada.","canal":"whatsapp","perfil":null,"nota":null,"problemas":[],"reintentos":0},{"dia":3,"voz":"agente","texto":"Hecho. El dossier sale hoy a tu correo con el flujo de la unidad de UF 3.592: dividendo $638.896, arriendo neto $292.247, flujo mensual negativo de $346.649 y amortización de $207.856. Los mismos números que te di acá, nada maquillado. Va también el escenario con multicrédito hasta UF 8.750 y el de bono pie 10%, para que compares las dos estructuras. Para la llamada con el gerente comercial tengo el viernes 11 a las 11:00 o a las 16:00, son 10 minutos y ahí queda formalizada la consulta del descuento. La estructura tributaria y bancaria exacta te la arma nuestro equipo legal y bancario en esa reunión. ¿Te tomo las 11:00 o las 16:00?","canal":"whatsapp","perfil":"B","nota":"Cierre propuesto: llamada con el gerente comercial el viernes 11 a las 11:00 o 16:00, con dossier enviado","problemas":[],"reintentos":0}],"resumen":{"guion":"B","leadId":"lead_mu0avhqqc","prospecto":"Rodrigo Salazar","origen":"grabacion","perfilFinal":"B","etiquetaPerfil":"Inversor de alto patrimonio","turnoEnQueDetectoElPerfil":2,"presupuestoUf":6810,"plazoCompra":"inmediato, con liquidez disponible","metodoFinanciamiento":"crédito hipotecario con pie de UF 1.750, evaluando multicrédito y bono pie","cierrePropuesto":"llamada con el gerente comercial el viernes 11 a las 11:00 o 16:00, con dossier enviado","agendo":true,"mensajesDelAgente":5,"correcciones":0,"incumplimientos":[]},"fichas":["FECHA: 07-09-26, 1:00 p. m.\nVALOR UF HOY: $40.000\nTASA HIPOTECARIA DE REFERENCIA: 4,5% anual a 25 años\n\nPROSPECTO\nNombre: Rodrigo Salazar\nCanal: portal_inmobiliario\nPerfil detectado: todavía sin perfilar — corresponde lanzar la pregunta de radar\n\nLO QUE DECLARÓ\nRenta líquida: no la ha dicho\nAhorro para el pie: no lo ha dicho\n\nCAPACIDAD DE COMPRA (calculada con criterios de la banca chilena)\nPrecio máximo: no estimable todavía\nDividendo máximo mensual: $0\nPie disponible: UF 0\nQué lo limita: sin_datos\nPie mínimo primera vivienda: 20% · para inversión: 30%\n- Falta la renta líquida para estimar el crédito.\n\nUNIDADES DISPONIBLES (las únicas que existen; no hay otras)\n1. Mirador Alto, Macul · tipología C8 4D3B · 87 m² útiles · UF 5.143 · reserva $1.000.000 · entrega Junio 2026 · dirección Av. Irarrázaval 7602 · atributos: Bono pie, Subsidio, Pie cero, Airbnb, Amoblado\n2. Altos del Valle, Colina · tipología B6 4D3B · 120 m² útiles · UF 8.040 · entrega Junio 2029 · dirección Av. Irarrázaval 3209 · atributos: Bono pie, Amoblado, Devolución IVA\n\nALTERNATIVAS DE FINANCIAMIENTO (existen y aplican a este caso)\nSi no le alcanza con su capacidad actual, NO cierres la conversación: ofrécele estas vías.\nCada una lleva su contra, y la contra se dice junto con la vía.\n1. Bono pie de la inmobiliaria\n   Cómo funciona: La inmobiliaria aporta 10% del precio al pie, del orden de UF 269 en una unidad de este valor.\n   Requisito: Solo en los proyectos que lo ofrecen y mientras dure el beneficio.\n   Contra: Lo aprueba la inmobiliaria, no el corredor, y suele venir con condiciones (plazo de reserva, forma de pago). No lo des por hecho hasta tenerlo por escrito.\n   Techo con esta vía: UF 1.343 (sube UF 1.343)\n   Disponible en: Mirador Alto, Macul · Altos del Valle, Colina · Edificio Costanera, La Serena · Vista Cordillera, La Reina · Portal del Sol, San Miguel\n2. Pie en cuotas hasta la entrega\n   Cómo funciona: En proyectos en verde el pie se paga en mensualidades hasta la entrega. En Altos del Valle quedan 33 meses, o sea del orden de $651.287 al mes.\n   Requisito: Capacidad de ahorro mensual sostenida hasta la entrega, además del arriendo que esté pagando hoy.\n   Contra: No reduce el pie, lo reparte. Y si deja de pagar las cuotas, pierde la unidad y parte de lo abonado según lo que diga la promesa.\n   No cambia el techo, cambia la forma de pagar.\n   Efectivo necesario hoy: $651.287\n   Disponible en: Altos del Valle (33 meses) · Vista Cordillera (21 meses) · Portal del Sol (15 meses) · Distrito Central (27 meses) · Altamira (27 meses)\n3. Pie cero\n   Cómo funciona: La inmobiliaria difiere el pie completo hasta la escritura, así que se entra sin desembolso inicial.\n   Requisito: Renta que soporte el dividendo sobre el 100% del precio y aprobación del proyecto.\n   Contra: El dividendo sube porque se financia más capital, y el pie diferido igual hay que pagarlo. Conviene compararlo con juntar pie un año más.\n   No cambia el techo, cambia la forma de pagar.\n   Efectivo necesario hoy: $0\n   Disponible en: Mirador Alto, Macul · Edificio Costanera, La Serena · Portal del Sol, San Miguel\n4. Leasing habitacional\n   Cómo funciona: Una sociedad inmobiliaria compra la propiedad y el comprador paga un arriendo con promesa de compraventa; parte de cada cuota se abona al precio.\n   Requisito: Ingresos acreditables. No exige pie ni evaluación hipotecaria tradicional.\n   Contra: La propiedad no queda a su nombre hasta terminar el contrato, y el costo financiero total es mayor que un crédito hipotecario. Es la última opción, no la primera.\n   No cambia el techo, cambia la forma de pagar.\n   Efectivo necesario hoy: $0\n\nAGENDA DISPONIBLE (los únicos bloques que puedes ofrecer)\n- 08-09-26, 11:00 a. m.\n- 08-09-26, 4:00 p. m.\n- 08-09-26, 6:00 p. m.\n\nLO QUE EL SISTEMA VA A REVISAR DE TU RESPUESTA\n- Toda cifra del mensaje aparece en la ficha de hechos.\n- Si hay rentabilidad, aparece la neta y no solo la bruta.\n- Si el flujo de arriendo es negativo, el mensaje lo dice.\n- No promete la aprobación del crédito.\n- No ofrece descuentos ni negocia precio.\n- Si no le alcanza, ofrece una alternativa de financiamiento en vez de cerrar la puerta.\n- Termina con una pregunta de cierre.","FECHA: 07-09-26, 1:20 p. m.\nVALOR UF HOY: $40.000\nTASA HIPOTECARIA DE REFERENCIA: 4,5% anual a 25 años\n\nPROSPECTO\nNombre: Rodrigo Salazar\nCanal: portal_inmobiliario\nPerfil detectado: todavía sin perfilar — corresponde lanzar la pregunta de radar\n\nLO QUE DECLARÓ\nRenta líquida: $4.500.000\nAhorro para el pie: $70.000.000\n\nCAPACIDAD DE COMPRA (calculada con criterios de la banca chilena)\nPrecio máximo para UNA propiedad: UF 6.810\nDividendo máximo mensual: $1.125.000\nPie disponible: UF 1.750\nQué lo limita: renta\nPie mínimo primera vivienda: 20% · para inversión: 30%\n\nUNIDADES DISPONIBLES (las únicas que existen; no hay otras)\n1. Mirador Alto, Macul · tipología B2 1D1B · 51 m² útiles · UF 3.592 · reserva $1.000.000 · entrega Junio 2026 · dirección Av. Irarrázaval 7602 · atributos: Bono pie, Subsidio, Pie cero, Airbnb, Amoblado\n2. Edificio Costanera, La Serena · tipología B2 2D2B · 64 m² útiles · UF 3.566 · reserva $1.000.000 · entrega Junio 2026 · dirección Av. Vicuña Mackenna 4565 · atributos: Bono pie 10, Subsidio, Pie cero, DFL2, Devolución IVA\n\nECONOMÍA DEL ARRIENDO, POR UNIDAD (UF 3.592)\nArriendo de mercado estimado: $540.000 al mes\nArriendo neto (descontadas vacancia, administración, contribuciones y mantención): $292.247\nDividendo: $638.896 — de eso, interés $431.040 y amortización $207.856\nFLUJO MENSUAL: NEGATIVO, le cuesta $346.649 al mes\nCosto real descontando la amortización: $138.793 al mes\nRentabilidad bruta: 4,51% anual\nRentabilidad NETA: 2,44% anual\nPie de ESTA unidad: UF 718 (financiamiento 80%, es su primera propiedad); las siguientes van al 70%\n\nCARTERA QUE PIDIÓ: 4 unidades\nUNIDADES QUE LE FINANCIAN DE VERDAD: 1\nQué lo frena: ambas\nPie requerido: UF 718 de UF 1.750 disponibles\nDividendo total: $638.896 contra un tope de $1.125.000\nArriendo neto total: $292.247\nFlujo total: NEGATIVO, $346.649 al mes de su bolsillo\nAmortización total: $207.856 al mes pasan a patrimonio\n\nALTERNATIVAS DE FINANCIAMIENTO (existen y aplican a este caso)\nSi no le alcanza con su capacidad actual, NO cierres la conversación: ofrécele estas vías.\nCada una lleva su contra, y la contra se dice junto con la vía.\n1. Multicrédito con segundo titular\n   Cómo funciona: El crédito se pide entre dos personas y el banco suma ambas rentas líquidas para calcular la carga.\n   Requisito: Una segunda persona con renta acreditable y sin Dicom: pareja, hermano, padre o madre.\n   Contra: Los dos quedan obligados por el total de la deuda, no por mitades, y al segundo titular le ocupa su cupo de crédito para lo que quiera hacer después.\n   Techo con esta vía: UF 8.750 (sube UF 1.940)\n2. Bono pie de la inmobiliaria\n   Cómo funciona: La inmobiliaria aporta 10% del precio al pie, del orden de UF 269 en una unidad de este valor.\n   Requisito: Solo en los proyectos que lo ofrecen y mientras dure el beneficio.\n   Contra: Lo aprueba la inmobiliaria, no el corredor, y suele venir con condiciones (plazo de reserva, forma de pago). No lo des por hecho hasta tenerlo por escrito.\n   Techo con esta vía: UF 8.153 (sube UF 1.343)\n   Disponible en: Mirador Alto, Macul · Altos del Valle, Colina · Edificio Costanera, La Serena · Vista Cordillera, La Reina · Portal del Sol, San Miguel\n\nAGENDA DISPONIBLE (los únicos bloques que puedes ofrecer)\n- 08-09-26, 11:00 a. m.\n- 08-09-26, 4:00 p. m.\n- 08-09-26, 6:00 p. m.\n\nLO QUE EL SISTEMA VA A REVISAR DE TU RESPUESTA\n- Toda cifra del mensaje aparece en la ficha de hechos.\n- Si hay rentabilidad, aparece la neta y no solo la bruta.\n- Si el flujo de arriendo es negativo, el mensaje lo dice.\n- No promete la aprobación del crédito.\n- No ofrece descuentos ni negocia precio.\n- Si no le alcanza, ofrece una alternativa de financiamiento en vez de cerrar la puerta.\n- Termina con una pregunta de cierre.","FECHA: 08-09-26, 1:40 p. m.\nVALOR UF HOY: $40.000\nTASA HIPOTECARIA DE REFERENCIA: 4,5% anual a 25 años\n\nPROSPECTO\nNombre: Rodrigo Salazar\nCanal: portal_inmobiliario\nPerfil detectado: B\n\nLO QUE DECLARÓ\nRenta líquida: $4.500.000\nAhorro para el pie: $70.000.000\n\nCAPACIDAD DE COMPRA (calculada con criterios de la banca chilena)\nPrecio máximo para UNA propiedad: UF 6.810\nDividendo máximo mensual: $1.125.000\nPie disponible: UF 1.750\nQué lo limita: renta\nPie mínimo primera vivienda: 20% · para inversión: 30%\n\nUNIDADES DISPONIBLES (las únicas que existen; no hay otras)\n1. Mirador Alto, Macul · tipología B2 1D1B · 51 m² útiles · UF 3.592 · reserva $1.000.000 · entrega Junio 2026 · dirección Av. Irarrázaval 7602 · atributos: Bono pie, Subsidio, Pie cero, Airbnb, Amoblado\n2. Edificio Costanera, La Serena · tipología B2 2D2B · 64 m² útiles · UF 3.566 · reserva $1.000.000 · entrega Junio 2026 · dirección Av. Vicuña Mackenna 4565 · atributos: Bono pie 10, Subsidio, Pie cero, DFL2, Devolución IVA\n\nECONOMÍA DEL ARRIENDO, POR UNIDAD (UF 3.592)\nArriendo de mercado estimado: $540.000 al mes\nArriendo neto (descontadas vacancia, administración, contribuciones y mantención): $292.247\nDividendo: $638.896 — de eso, interés $431.040 y amortización $207.856\nFLUJO MENSUAL: NEGATIVO, le cuesta $346.649 al mes\nCosto real descontando la amortización: $138.793 al mes\nRentabilidad bruta: 4,51% anual\nRentabilidad NETA: 2,44% anual\nPie de ESTA unidad: UF 718 (financiamiento 80%, es su primera propiedad); las siguientes van al 70%\n\nCARTERA QUE PIDIÓ: 4 unidades\nUNIDADES QUE LE FINANCIAN DE VERDAD: 1\nQué lo frena: ambas\nPie requerido: UF 718 de UF 1.750 disponibles\nDividendo total: $638.896 contra un tope de $1.125.000\nArriendo neto total: $292.247\nFlujo total: NEGATIVO, $346.649 al mes de su bolsillo\nAmortización total: $207.856 al mes pasan a patrimonio\n\nALTERNATIVAS DE FINANCIAMIENTO (existen y aplican a este caso)\nSi no le alcanza con su capacidad actual, NO cierres la conversación: ofrécele estas vías.\nCada una lleva su contra, y la contra se dice junto con la vía.\n1. Multicrédito con segundo titular\n   Cómo funciona: El crédito se pide entre dos personas y el banco suma ambas rentas líquidas para calcular la carga.\n   Requisito: Una segunda persona con renta acreditable y sin Dicom: pareja, hermano, padre o madre.\n   Contra: Los dos quedan obligados por el total de la deuda, no por mitades, y al segundo titular le ocupa su cupo de crédito para lo que quiera hacer después.\n   Techo con esta vía: UF 8.750 (sube UF 1.940)\n2. Bono pie de la inmobiliaria\n   Cómo funciona: La inmobiliaria aporta 10% del precio al pie, del orden de UF 269 en una unidad de este valor.\n   Requisito: Solo en los proyectos que lo ofrecen y mientras dure el beneficio.\n   Contra: Lo aprueba la inmobiliaria, no el corredor, y suele venir con condiciones (plazo de reserva, forma de pago). No lo des por hecho hasta tenerlo por escrito.\n   Techo con esta vía: UF 8.153 (sube UF 1.343)\n   Disponible en: Mirador Alto, Macul · Altos del Valle, Colina · Edificio Costanera, La Serena · Vista Cordillera, La Reina · Portal del Sol, San Miguel\n\nAGENDA DISPONIBLE (los únicos bloques que puedes ofrecer)\n- 09-09-26, 11:00 a. m.\n- 09-09-26, 4:00 p. m.\n- 09-09-26, 6:00 p. m.\n\nLO QUE EL SISTEMA VA A REVISAR DE TU RESPUESTA\n- Toda cifra del mensaje aparece en la ficha de hechos.\n- Si hay rentabilidad, aparece la neta y no solo la bruta.\n- Si el flujo de arriendo es negativo, el mensaje lo dice.\n- No promete la aprobación del crédito.\n- No ofrece descuentos ni negocia precio.\n- Si no le alcanza, ofrece una alternativa de financiamiento en vez de cerrar la puerta.\n- Termina con una pregunta de cierre.","FECHA: 09-09-26, 2:00 p. m.\nVALOR UF HOY: $40.000\nTASA HIPOTECARIA DE REFERENCIA: 4,5% anual a 25 años\n\nPROSPECTO\nNombre: Rodrigo Salazar\nCanal: portal_inmobiliario\nPerfil detectado: B\n\nLO QUE DECLARÓ\nRenta líquida: $4.500.000\nAhorro para el pie: $70.000.000\n\nCAPACIDAD DE COMPRA (calculada con criterios de la banca chilena)\nPrecio máximo para UNA propiedad: UF 6.810\nDividendo máximo mensual: $1.125.000\nPie disponible: UF 1.750\nQué lo limita: renta\nPie mínimo primera vivienda: 20% · para inversión: 30%\n\nUNIDADES DISPONIBLES (las únicas que existen; no hay otras)\n1. Mirador Alto, Macul · tipología B2 1D1B · 51 m² útiles · UF 3.592 · reserva $1.000.000 · entrega Junio 2026 · dirección Av. Irarrázaval 7602 · atributos: Bono pie, Subsidio, Pie cero, Airbnb, Amoblado\n2. Edificio Costanera, La Serena · tipología B2 2D2B · 64 m² útiles · UF 3.566 · reserva $1.000.000 · entrega Junio 2026 · dirección Av. Vicuña Mackenna 4565 · atributos: Bono pie 10, Subsidio, Pie cero, DFL2, Devolución IVA\n\nECONOMÍA DEL ARRIENDO, POR UNIDAD (UF 3.592)\nArriendo de mercado estimado: $540.000 al mes\nArriendo neto (descontadas vacancia, administración, contribuciones y mantención): $292.247\nDividendo: $638.896 — de eso, interés $431.040 y amortización $207.856\nFLUJO MENSUAL: NEGATIVO, le cuesta $346.649 al mes\nCosto real descontando la amortización: $138.793 al mes\nRentabilidad bruta: 4,51% anual\nRentabilidad NETA: 2,44% anual\nPie de ESTA unidad: UF 718 (financiamiento 80%, es su primera propiedad); las siguientes van al 70%\n\nCARTERA QUE PIDIÓ: 4 unidades\nUNIDADES QUE LE FINANCIAN DE VERDAD: 1\nQué lo frena: ambas\nPie requerido: UF 718 de UF 1.750 disponibles\nDividendo total: $638.896 contra un tope de $1.125.000\nArriendo neto total: $292.247\nFlujo total: NEGATIVO, $346.649 al mes de su bolsillo\nAmortización total: $207.856 al mes pasan a patrimonio\n\nALTERNATIVAS DE FINANCIAMIENTO (existen y aplican a este caso)\nSi no le alcanza con su capacidad actual, NO cierres la conversación: ofrécele estas vías.\nCada una lleva su contra, y la contra se dice junto con la vía.\n1. Multicrédito con segundo titular\n   Cómo funciona: El crédito se pide entre dos personas y el banco suma ambas rentas líquidas para calcular la carga.\n   Requisito: Una segunda persona con renta acreditable y sin Dicom: pareja, hermano, padre o madre.\n   Contra: Los dos quedan obligados por el total de la deuda, no por mitades, y al segundo titular le ocupa su cupo de crédito para lo que quiera hacer después.\n   Techo con esta vía: UF 8.750 (sube UF 1.940)\n2. Bono pie de la inmobiliaria\n   Cómo funciona: La inmobiliaria aporta 10% del precio al pie, del orden de UF 269 en una unidad de este valor.\n   Requisito: Solo en los proyectos que lo ofrecen y mientras dure el beneficio.\n   Contra: Lo aprueba la inmobiliaria, no el corredor, y suele venir con condiciones (plazo de reserva, forma de pago). No lo des por hecho hasta tenerlo por escrito.\n   Techo con esta vía: UF 8.153 (sube UF 1.343)\n   Disponible en: Mirador Alto, Macul · Altos del Valle, Colina · Edificio Costanera, La Serena · Vista Cordillera, La Reina · Portal del Sol, San Miguel\n\nAGENDA DISPONIBLE (los únicos bloques que puedes ofrecer)\n- 10-09-26, 11:00 a. m.\n- 10-09-26, 4:00 p. m.\n- 10-09-26, 6:00 p. m.\n\nLO QUE EL SISTEMA VA A REVISAR DE TU RESPUESTA\n- Toda cifra del mensaje aparece en la ficha de hechos.\n- Si hay rentabilidad, aparece la neta y no solo la bruta.\n- Si el flujo de arriendo es negativo, el mensaje lo dice.\n- No promete la aprobación del crédito.\n- No ofrece descuentos ni negocia precio.\n- Si no le alcanza, ofrece una alternativa de financiamiento en vez de cerrar la puerta.\n- Termina con una pregunta de cierre.","FECHA: 10-09-26, 2:20 p. m.\nVALOR UF HOY: $40.000\nTASA HIPOTECARIA DE REFERENCIA: 4,5% anual a 25 años\n\nPROSPECTO\nNombre: Rodrigo Salazar\nCanal: portal_inmobiliario\nPerfil detectado: B\n\nLO QUE DECLARÓ\nRenta líquida: $4.500.000\nAhorro para el pie: $70.000.000\n\nCAPACIDAD DE COMPRA (calculada con criterios de la banca chilena)\nPrecio máximo para UNA propiedad: UF 6.810\nDividendo máximo mensual: $1.125.000\nPie disponible: UF 1.750\nQué lo limita: renta\nPie mínimo primera vivienda: 20% · para inversión: 30%\n\nUNIDADES DISPONIBLES (las únicas que existen; no hay otras)\n1. Mirador Alto, Macul · tipología B2 1D1B · 51 m² útiles · UF 3.592 · reserva $1.000.000 · entrega Junio 2026 · dirección Av. Irarrázaval 7602 · atributos: Bono pie, Subsidio, Pie cero, Airbnb, Amoblado\n2. Edificio Costanera, La Serena · tipología B2 2D2B · 64 m² útiles · UF 3.566 · reserva $1.000.000 · entrega Junio 2026 · dirección Av. Vicuña Mackenna 4565 · atributos: Bono pie 10, Subsidio, Pie cero, DFL2, Devolución IVA\n\nECONOMÍA DEL ARRIENDO, POR UNIDAD (UF 3.592)\nArriendo de mercado estimado: $540.000 al mes\nArriendo neto (descontadas vacancia, administración, contribuciones y mantención): $292.247\nDividendo: $638.896 — de eso, interés $431.040 y amortización $207.856\nFLUJO MENSUAL: NEGATIVO, le cuesta $346.649 al mes\nCosto real descontando la amortización: $138.793 al mes\nRentabilidad bruta: 4,51% anual\nRentabilidad NETA: 2,44% anual\nPie de ESTA unidad: UF 718 (financiamiento 80%, es su primera propiedad); las siguientes van al 70%\n\nCARTERA QUE PIDIÓ: 4 unidades\nUNIDADES QUE LE FINANCIAN DE VERDAD: 1\nQué lo frena: ambas\nPie requerido: UF 718 de UF 1.750 disponibles\nDividendo total: $638.896 contra un tope de $1.125.000\nArriendo neto total: $292.247\nFlujo total: NEGATIVO, $346.649 al mes de su bolsillo\nAmortización total: $207.856 al mes pasan a patrimonio\n\nALTERNATIVAS DE FINANCIAMIENTO (existen y aplican a este caso)\nSi no le alcanza con su capacidad actual, NO cierres la conversación: ofrécele estas vías.\nCada una lleva su contra, y la contra se dice junto con la vía.\n1. Multicrédito con segundo titular\n   Cómo funciona: El crédito se pide entre dos personas y el banco suma ambas rentas líquidas para calcular la carga.\n   Requisito: Una segunda persona con renta acreditable y sin Dicom: pareja, hermano, padre o madre.\n   Contra: Los dos quedan obligados por el total de la deuda, no por mitades, y al segundo titular le ocupa su cupo de crédito para lo que quiera hacer después.\n   Techo con esta vía: UF 8.750 (sube UF 1.940)\n2. Bono pie de la inmobiliaria\n   Cómo funciona: La inmobiliaria aporta 10% del precio al pie, del orden de UF 269 en una unidad de este valor.\n   Requisito: Solo en los proyectos que lo ofrecen y mientras dure el beneficio.\n   Contra: Lo aprueba la inmobiliaria, no el corredor, y suele venir con condiciones (plazo de reserva, forma de pago). No lo des por hecho hasta tenerlo por escrito.\n   Techo con esta vía: UF 8.153 (sube UF 1.343)\n   Disponible en: Mirador Alto, Macul · Altos del Valle, Colina · Edificio Costanera, La Serena · Vista Cordillera, La Reina · Portal del Sol, San Miguel\n\nAGENDA DISPONIBLE (los únicos bloques que puedes ofrecer)\n- 11-09-26, 11:00 a. m.\n- 11-09-26, 4:00 p. m.\n- 11-09-26, 6:00 p. m.\n\nLO QUE EL SISTEMA VA A REVISAR DE TU RESPUESTA\n- Toda cifra del mensaje aparece en la ficha de hechos.\n- Si hay rentabilidad, aparece la neta y no solo la bruta.\n- Si el flujo de arriendo es negativo, el mensaje lo dice.\n- No promete la aprobación del crédito.\n- No ofrece descuentos ni negocia precio.\n- Si no le alcanza, ofrece una alternativa de financiamiento en vez de cerrar la puerta.\n- Termina con una pregunta de cierre."]}}</script>
+<script>
+(function(){
+  "use strict";
+  const DATOS = JSON.parse(document.getElementById("datos").textContent);
+  const hilo = document.getElementById("hilo");
+  const ficha = document.getElementById("ficha");
+  const fichaTurno = document.getElementById("fichaTurno");
+  const resumen = document.getElementById("resumen");
+  const vias = document.getElementById("vias");
+  const reglas = document.getElementById("reglas");
+  const tituloResumen = document.getElementById("tituloResumen");
+
+  let guion = "A";
+  let turnoActivo = 0;
+
+  const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;" }[c]));
+  const uf = (n) => "UF " + Number(n).toLocaleString("es-CL");
+
+  /* La ficha se resalta: títulos en blanco, lo que sube en verde, lo que
+     cuesta en rojo. Es un documento de números, no prosa. */
+  function pintarFicha(texto){
+    return esc(texto)
+      .replace(/^([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9 ,.()%·]{6,})$/gm, "<b>$1</b>")
+      .replace(/(NEGATIVO[^\n]*)/g, '<span class="baja">$1</span>')
+      .replace(/(sube UF [\d.,]+)/g, '<span class="alza">$1</span>')
+      .replace(/(Techo con esta vía: UF [\d.,]+)/g, '<span class="alza">$1</span>');
+  }
+
+  function mostrarFicha(indiceAgente){
+    const f = DATOS[guion].fichas[indiceAgente] || "";
+    ficha.innerHTML = pintarFicha(f);
+    fichaTurno.textContent = "turno " + (indiceAgente + 1) + " de " + DATOS[guion].fichas.length;
+    ficha.scrollTop = 0;
+  }
+
+  function pintarHilo(){
+    const turnos = DATOS[guion].turnos;
+    hilo.innerHTML = "";
+    let nAgente = -1;
+    turnos.forEach((t) => {
+      const esAgente = t.voz === "agente";
+      if (esAgente) nAgente += 1;
+      const indice = nAgente;
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "turno " + (esAgente ? "agente" : "prospecto");
+      b.setAttribute("aria-current", esAgente && indice === turnoActivo ? "true" : "false");
+      const sello = esAgente && t.perfil ? " · perfil " + t.perfil : "";
+      const limpio = esAgente && !t.problemas.length
+        ? '<span class="ok-chip">✓ verificado</span>' : "";
+      b.innerHTML =
+        '<span class="meta"><span class="quien">' + (esAgente ? "Agente" : "Prospecto") + "</span>" +
+        "<span>día " + t.dia + (t.canal ? " · " + t.canal : "") + sello + "</span>" + limpio + "</span>" +
+        '<span class="burbuja">' + esc(t.texto) + "</span>" +
+        (t.nota ? '<span class="nota">' + esc(t.nota) + "</span>" : "");
+      if (esAgente){
+        b.addEventListener("click", () => { turnoActivo = indice; pintarHilo(); mostrarFicha(indice); });
+      } else {
+        b.disabled = true;
+        b.style.cursor = "default";
+      }
+      hilo.appendChild(b);
+    });
+  }
+
+  function pintarResumen(){
+    const r = DATOS[guion].resumen;
+    tituloResumen.textContent = r.prospecto + " · " + r.etiquetaPerfil;
+    const filas = [
+      ["Perfil detectado", "turno " + r.turnoEnQueDetectoElPerfil, true],
+      ["Presupuesto", r.presupuestoUf ? uf(r.presupuestoUf) : "no extraído", true],
+      ["Financiamiento", r.metodoFinanciamiento || "no extraído", false],
+      ["Plazo de compra", r.plazoCompra || "no declarado", false],
+      ["Cierre propuesto", r.cierrePropuesto || "ninguno", false],
+      ["Incumplimientos", r.incumplimientos.length === 0 ? "ninguno" : String(r.incumplimientos.length), true],
+    ];
+    resumen.innerHTML = filas.map(([k, v, grande]) =>
+      '<div class="dato"><dt>' + esc(k) + "</dt><dd" + (grande ? ' class="grande"' : "") + ">" + esc(v) + "</dd></div>"
+    ).join("");
+  }
+
+  /* Las vías salen de la última ficha del guion, que es la más completa. */
+  function pintarVias(){
+    const fichas = DATOS[guion].fichas;
+    let bloque = "";
+    for (let i = fichas.length - 1; i >= 0; i--){
+      const inicio = fichas[i].indexOf("ALTERNATIVAS DE FINANCIAMIENTO");
+      if (inicio !== -1){
+        const fin = fichas[i].indexOf("AGENDA DISPONIBLE", inicio);
+        bloque = fichas[i].slice(inicio, fin === -1 ? undefined : fin);
+        break;
+      }
+    }
+    const items = bloque.split(/\n(?=\d+\. )/).slice(1);
+    if (!items.length){
+      vias.innerHTML = '<div class="via"><div class="titulo">Sin alternativas aplicables en este turno.</div></div>';
+      return;
+    }
+    vias.innerHTML = items.map((item) => {
+      const linea = (et) => (item.match(new RegExp(et + ": (.*)")) || [, ""])[1].trim();
+      const titulo = (item.match(/^\d+\.\s*(.*)/) || [, ""])[1].trim();
+      const techo = (item.match(/Techo con esta vía: (UF [\d.,]+)/) || [, ""])[1];
+      const sube = (item.match(/sube (UF [\d.,]+)/) || [, ""])[1];
+      const efectivo = (item.match(/Efectivo necesario hoy: (\$[\d.,]+)/) || [, ""])[1];
+      const donde = linea("Disponible en");
+      return '<div class="via">' +
+        '<div class="titulo">' + esc(titulo) +
+          '<span class="como">' + esc(linea("Cómo funciona")) + "</span>" +
+          (donde ? '<span class="como" style="opacity:.8">En: ' + esc(donde) + "</span>" : "") +
+        "</div>" +
+        '<div class="contra"><span class="et">La contra</span>' + esc(linea("Contra")) + "</div>" +
+        '<div class="techo">' +
+          (techo ? '<span class="n">' + esc(techo) + '</span><span class="et">techo con esta vía' +
+            (sube ? " · +" + esc(sube) : "") + "</span>"
+                 : efectivo ? '<span class="n">' + esc(efectivo) + '</span><span class="et">efectivo hoy</span>'
+                 : '<span class="et">no cambia el techo</span>') +
+        "</div></div>";
+    }).join("");
+  }
+
+  function pintarReglas(){
+    const r = DATOS[guion].resumen;
+    const lista = [
+      "Toda cifra del mensaje aparece en la ficha de hechos.",
+      "Si hay rentabilidad, aparece la neta y no solo la bruta.",
+      "Si el flujo de arriendo es negativo, el mensaje lo dice.",
+      "No promete la aprobación del crédito.",
+      "No ofrece descuentos ni negocia precio.",
+      "Si no le alcanza, ofrece una alternativa en vez de cerrar la puerta.",
+      "Termina con una pregunta de cierre.",
+    ];
+    reglas.innerHTML = lista.map((t) =>
+      '<div class="regla"><span class="marca-ok">✓</span><span>' + esc(t) + "</span></div>"
+    ).join("") +
+    '<div class="regla" style="border-left-color:var(--tinta-suave)"><span class="marca-ok" style="color:var(--tinta-suave)">·</span><span>' +
+      "En esta corrida: " + r.mensajesDelAgente + " mensajes, " + r.correcciones +
+      " correcciones forzadas, " + (r.incumplimientos.length || "cero") + " incumplimientos." +
+    "</span></div>";
+  }
+
+  function cambiar(nuevo){
+    guion = nuevo;
+    turnoActivo = 0;
+    document.querySelectorAll(".perfil-btn").forEach((b) =>
+      b.setAttribute("aria-selected", String(b.dataset.guion === nuevo)));
+    document.getElementById("panel").setAttribute("aria-labelledby", "tab-" + nuevo);
+    pintarResumen(); pintarHilo(); mostrarFicha(0); pintarVias(); pintarReglas();
+  }
+
+  document.querySelectorAll(".perfil-btn").forEach((b) =>
+    b.addEventListener("click", () => cambiar(b.dataset.guion)));
+
+  cambiar("A");
+})();
+</script>

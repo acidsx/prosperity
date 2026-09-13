@@ -13,7 +13,8 @@
     "jetbrokers": "tsx --conditions=react-server scripts/jetbrokers.ts",
     "simular": "tsx --conditions=react-server scripts/simular.ts",
     "grabar": "tsx --conditions=react-server scripts/grabar.ts",
-    "closer": "tsx --conditions=react-server scripts/closer.ts"
+    "closer": "tsx --conditions=react-server scripts/closer.ts",
+    "mockup-datos": "tsx --conditions=react-server scripts/mockup-datos.ts"
   },
   "repository": {
     "type": "git",

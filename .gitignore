@@ -11,3 +11,7 @@ next-env.d.ts
 # Archivos de trabajo de la grabación del closer
 grabaciones/pendiente.txt
 grabaciones/respuesta.txt
+
+# Datos derivados del mockup (se regeneran con npm run mockup-datos)
+mockup/datos.json
+mockup/datos.min.json
