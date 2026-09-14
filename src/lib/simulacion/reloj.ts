@@ -60,11 +60,15 @@ export async function fecharMensajesNuevos(
     .filter((mensaje) => conocidos.has(mensaje.id))
     .reduce((maximo, mensaje) => Math.max(maximo, new Date(mensaje.enviadoEn).getTime()), 0);
 
+  // Ningún mensaje de una simulación puede quedar en el futuro. El último
+  // día del guion cae en el día hábil de hoy, así que los minutos que se van
+  // sumando entre mensajes alcanzan a pasarse de la hora actual.
+  const tope = Date.now();
   let siguiente = Math.max(cuando.getTime(), ultimoConocido + 3 * 60_000);
   const nuevos: Mensaje[] = [];
   for (const mensaje of ahora) {
     if (conocidos.has(mensaje.id)) continue;
-    const enviadoEn = new Date(siguiente).toISOString();
+    const enviadoEn = new Date(Math.min(siguiente, tope)).toISOString();
     await db.actualizarMensaje(mensaje.id, { enviadoEn });
     nuevos.push({ ...mensaje, enviadoEn });
     siguiente += 3 * 60_000;

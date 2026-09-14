@@ -350,6 +350,10 @@ se pruebe siempre contra el mismo saludo:
 | `B` | Rodrigo Salazar, inversor | Por correo, formal, pidiendo stock |
 | `C` | Patricio Vergara, cliente problemático | Hostil, prohibiendo de entrada el gancho de escasez |
 
+Las versiones con reglas de cadencia (`--v26`) usan guiones extendidos: un prompt que exige
+mensajes de dos líneas, un beneficio por vez y tres respuestas positivas antes de cerrar no
+cabe en cuatro turnos, y la conversación se cortaría antes de que la regla alcance a operar.
+
 Dos modos de intervención:
 
 | | `correccion` (por defecto) | `--crudo` |

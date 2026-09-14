@@ -205,6 +205,56 @@ const GUION_C: PasoGuion[] = [
   },
 ];
 
+/**
+ * Guiones extendidos para las versiones con reglas de cadencia.
+ *
+ * Un prompt que exige mensajes de dos líneas, un beneficio por vez y tres
+ * respuestas positivas antes de cerrar no cabe en cuatro turnos: la
+ * conversación se corta antes de que la regla alcance a operar. Estos
+ * guiones son los mismos prospectos, con las reacciones cortas que en una
+ * conversación real de WhatsApp van entremedio.
+ */
+const GUION_A_CADENCIA: PasoGuion[] = [
+  GUION_A[0],
+  GUION_A[1],
+  {
+    dia: 0,
+    texto: "Sí, o sea... me gustaría tener algo mío. Llevo 6 años arrendando y siento que tiro la plata.",
+    canal: "whatsapp",
+    nota: "Respuesta emocional y larga. Acá la regla 4 pide extraer, no vender.",
+  },
+  GUION_A[2],
+  { dia: 1, texto: "Sí, eso me tranquiliza un poco.", canal: "whatsapp" },
+  GUION_A[3],
+  { dia: 2, texto: "Sí, me suena bien.", canal: "whatsapp", nota: "Tercer sí. Recién acá la regla 5 habilita agendar." },
+  GUION_A[4],
+];
+
+const GUION_B_CADENCIA: PasoGuion[] = [
+  GUION_B[0],
+  GUION_B[1],
+  { dia: 0, texto: "Correcto.", canal: "whatsapp" },
+  GUION_B[2],
+  { dia: 1, texto: "Entiendo. Sí, tiene sentido.", canal: "whatsapp" },
+  GUION_B[3],
+  { dia: 2, texto: "Ya, sí.", canal: "whatsapp", nota: "Tercer sí." },
+  GUION_B[4],
+];
+
+const GUION_C_CADENCIA: PasoGuion[] = [
+  GUION_C[0],
+  GUION_C[1],
+  {
+    dia: 0,
+    texto: "Ya. ¿Y por qué debería creerte a ti?",
+    canal: "whatsapp",
+    nota: "No da ningún sí. La regla 5 bloquea el cierre.",
+  },
+  GUION_C[2],
+  { dia: 1, texto: "Al menos eres honesto.", canal: "whatsapp" },
+  GUION_C[3],
+];
+
 export interface OpcionesCloser {
   guion: GuionCloser;
   proveedor: ProveedorModelo;
@@ -219,8 +269,19 @@ export interface OpcionesCloser {
 
 export async function simularCloser(opciones: OpcionesCloser): Promise<ResultadoCloser> {
   const db = tienda();
-  const guion =
-    opciones.guion === "A" ? GUION_A : opciones.guion === "B" ? GUION_B : GUION_C;
+  // Las versiones con reglas de cadencia usan el guion extendido.
+  const conCadencia = opciones.version === "v26";
+  const guion = conCadencia
+    ? opciones.guion === "A"
+      ? GUION_A_CADENCIA
+      : opciones.guion === "B"
+        ? GUION_B_CADENCIA
+        : GUION_C_CADENCIA
+    : opciones.guion === "A"
+      ? GUION_A
+      : opciones.guion === "B"
+        ? GUION_B
+        : GUION_C;
   const turnos: TurnoCloser[] = [];
 
   const inicio = opciones.ahora ?? ANCLA_GRABACION;
