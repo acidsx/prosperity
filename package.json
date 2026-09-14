@@ -16,7 +16,8 @@
     "closer": "tsx --conditions=react-server scripts/closer.ts",
     "mockup-datos": "tsx --conditions=react-server scripts/mockup-datos.ts",
     "incentivos": "tsx --conditions=react-server scripts/incentivos.ts",
-    "auditoria": "tsx --conditions=react-server scripts/auditoria.ts"
+    "auditoria": "tsx --conditions=react-server scripts/auditoria.ts",
+    "pdf": "python3 scripts/pdf-cadena.py"
   },
   "repository": {
     "type": "git",

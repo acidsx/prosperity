@@ -606,6 +606,7 @@ npm run closer -- A | B             # el agente conversando con modelo
 npm run incentivos                  # vigencia de FOGAES, subsidios e IVA
 npm run closer -- B --v2 [--crudo]  # una conversación con el prompt v2.0
 npm run auditoria                   # qué rechazó el verificador y con qué norma
+npm run pdf -- v26                  # las conversaciones en PDF, para compartir
 npm run grabar -- A | B             # graba los turnos contra el modelo
 npm run jetbrokers -- diagnostico  # prueba la conexión con el CRM
 npm run usuarios # alta de usuarios (requiere Supabase)
