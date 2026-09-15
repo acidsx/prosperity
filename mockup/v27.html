@@ -1,0 +1,274 @@
+<title>Calificación previa v2.7</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root{
+  --papel:#f4f6f7;--superficie:#fff;--tinta:#141d26;--tinta-suave:#5d6b7a;--borde:#dfe4e8;
+  --acento:#0e6a54;--acento-suave:#e3f0ec;--acento-tinta:#0a4f3e;
+  --critica:#a02616;--critica-suave:#fae9e6;--alta:#8a5a12;--alta-suave:#fdf2e0;
+  --media:#4a5a7a;--media-suave:#eaeef6;--prospecto:#eef1f4;--radio:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --papel:#0d151d;--superficie:#141f29;--tinta:#e6edf3;--tinta-suave:#96a6b5;--borde:#24323f;
+  --acento:#4fc4a1;--acento-suave:#123227;--acento-tinta:#7fd8bb;--prospecto:#1b2732;
+  --critica:#f0907c;--critica-suave:#3d1d17;--alta:#e8c07a;--alta-suave:#3a2d12;
+  --media:#a8b8d8;--media-suave:#1e2738;}}
+:root[data-theme="dark"]{
+  --papel:#0d151d;--superficie:#141f29;--tinta:#e6edf3;--tinta-suave:#96a6b5;--borde:#24323f;
+  --acento:#4fc4a1;--acento-suave:#123227;--acento-tinta:#7fd8bb;--prospecto:#1b2732;
+  --critica:#f0907c;--critica-suave:#3d1d17;--alta:#e8c07a;--alta-suave:#3a2d12;
+  --media:#a8b8d8;--media-suave:#1e2738;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--papel);color:var(--tinta);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.env{max-width:1060px;margin:0 auto;padding-inline:20px}
+h1,h2,h3{font-family:Archivo,sans-serif;text-wrap:balance;margin:0}
+h1{font-size:clamp(1.9rem,1.1rem + 2.6vw,3rem);font-weight:700;letter-spacing:-.024em;line-height:1.05}
+h2{font-size:1.35rem;font-weight:600;letter-spacing:-.012em}
+p{margin:0}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:.68rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--tinta-suave)}
+code{font-family:"IBM Plex Mono",monospace;font-size:.85em;background:var(--papel);border:1px solid var(--borde);border-radius:5px;padding:1px 5px}
+
+header{border-bottom:1px solid var(--borde);background:var(--superficie)}
+header .env{display:flex;flex-direction:column;gap:14px;padding-block:36px 28px}
+.bajada{max-width:66ch;color:var(--tinta-suave);font-size:1.04rem}
+.nota-crudo{display:flex;gap:11px;max-width:76ch;border-left:4px solid var(--acento);background:var(--acento-suave);padding:13px 16px;border-radius:0 var(--radio) var(--radio) 0;font-size:.92rem}
+.nota-crudo strong{color:var(--acento-tinta)}
+.nota-omision{display:flex;gap:11px;max-width:76ch;border-left:4px solid var(--alta);background:var(--alta-suave);padding:13px 16px;border-radius:0 var(--radio) var(--radio) 0;font-size:.92rem}
+.nota-omision strong{color:var(--alta)}
+
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.tab{font:inherit;font-weight:500;cursor:pointer;text-align:left;background:var(--papel);color:var(--tinta);border:1px solid var(--borde);border-radius:var(--radio);padding:11px 16px;display:flex;flex-direction:column;gap:2px;transition:border-color .15s}
+.tab .k{font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--tinta-suave)}
+.tab[aria-selected="true"]{background:var(--acento);border-color:var(--acento);color:#fff}
+.tab[aria-selected="true"] .k{color:rgba(255,255,255,.78)}
+.tab:focus-visible{outline:2px solid var(--acento);outline-offset:2px}
+.tabs.vers{margin-top:2px}
+.tab.chico{padding:8px 13px;font-size:.9rem}
+.comparativa{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-bottom:18px}
+@media (max-width:760px){.comparativa{grid-template-columns:1fr}}
+.comp{background:var(--superficie);border:1px solid var(--borde);border-radius:var(--radio);padding:14px 16px}
+.comp .quien{font-family:Archivo,sans-serif;font-weight:600;font-size:1rem;margin-bottom:8px}
+.comp .par{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:.85rem;padding:4px 0;border-top:1px solid var(--borde)}
+.comp .par:first-of-type{border-top:0}
+.comp .par .et{color:var(--tinta-suave);font-family:"IBM Plex Mono",monospace;font-size:.64rem;letter-spacing:.08em;text-transform:uppercase}
+.comp .par .vals{display:flex;gap:9px;align-items:baseline;font-variant-numeric:tabular-nums}
+.comp .antes{color:var(--tinta-suave);text-decoration:line-through;text-decoration-thickness:1px}
+.comp .flecha{color:var(--tinta-suave);font-size:.8rem}
+.comp .mejor{color:var(--acento-tinta);font-weight:600}
+.comp .peor{color:var(--critica);font-weight:600}
+
+main{padding-block:30px 56px}
+.sec{margin-top:38px}
+.sec:first-child{margin-top:0}
+.sec>.cab{display:flex;flex-direction:column;gap:5px;margin-bottom:15px}
+
+.marcador{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}
+@media (max-width:780px){.marcador{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tile{background:var(--superficie);border:1px solid var(--borde);border-radius:var(--radio);padding:14px 16px;display:flex;flex-direction:column;gap:2px}
+.tile dt{font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta-suave)}
+.tile dd{margin:0;font-family:Archivo,sans-serif;font-size:1.7rem;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.tile .pie{font-size:.77rem;color:var(--tinta-suave)}
+.tile.mal dd{color:var(--critica)}
+.tile.bien dd{color:var(--acento-tinta)}
+
+.hilo{display:flex;flex-direction:column;gap:15px}
+.t{display:flex;flex-direction:column;gap:5px}
+.t.agente{padding-left:clamp(0px,4vw,46px)}
+.t .meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.72rem;color:var(--tinta-suave)}
+.t .quien{font-family:"IBM Plex Mono",monospace;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;font-weight:500}
+.t .burb{padding:12px 15px;border-radius:var(--radio);font-size:.94rem;border:1px solid var(--borde);background:var(--prospecto)}
+.t.agente .burb{background:var(--acento-suave);border-color:transparent}
+.t.agente.marcado .burb{background:var(--critica-suave);border:1px solid var(--critica)}
+.t .nota{font-size:.8rem;color:var(--tinta-suave);font-style:italic}
+.obs{display:flex;flex-direction:column;gap:7px;margin-top:2px;padding:11px 13px;border:1px dashed var(--borde);border-radius:var(--radio);background:var(--superficie)}
+.obs .cabecera{font-family:"IBM Plex Mono",monospace;font-size:.61rem;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta-suave)}
+.ob{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;font-size:.85rem}
+.sev{font-family:"IBM Plex Mono",monospace;font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:99px;white-space:nowrap;font-weight:500}
+.sev.critica{background:var(--critica-suave);color:var(--critica)}
+.sev.alta{background:var(--alta-suave);color:var(--alta)}
+.sev.media{background:var(--media-suave);color:var(--media)}
+.sev.cifra{background:var(--media-suave);color:var(--media)}
+.ob .d{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ob .norma{font-size:.76rem;color:var(--tinta-suave)}
+.ob .frag{font-family:"IBM Plex Mono",monospace;font-size:.76rem}
+
+footer{border-top:1px solid var(--borde);background:var(--superficie);margin-top:52px}
+footer .env{padding-block:24px 32px;display:flex;flex-direction:column;gap:9px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header>
+  <div class="env">
+    <span class="eyebrow">Prosperity · simulación</span>
+    <h1>Calificar antes de agendar</h1>
+    <p class="bajada">Los mismos tres prospectos, con el v2.6 y con el v2.7. Lo que cambia esta
+      versión es el orden: el agente no puede ofrecer una visita hasta haber levantado renta, ahorro,
+      deudas y Dicom, y haberle devuelto al comprador su número.</p>
+    <div class="nota-crudo">
+      <div><strong>Sin intervención.</strong> El prompt va literal y la salida se envía tal cual.
+      La verificación igual corre, pero solo <em>anota</em> al pie de cada mensaje — no cambia
+      nada. Las observaciones están aparte para que se distingan de lo que dijo el agente.</div>
+    </div>
+    <div class="nota-omision">
+      <div><strong>Dos cosas quedaron fuera.</strong> El guion de «Estructuración Simultánea»
+      aprovechando la latencia de la CMF no se redactó. Y cuando Patricio pregunta derecho si habla
+      con un bot, la respuesta no niega: la regla de no sonar robótico se sigue, el desmentido no.</div>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Perfil">
+      <button class="tab" role="tab" id="t-A" aria-selected="true" data-g="A">
+        <span class="k">Primera compra</span><span>Sofía Reyes · entra por redes</span></button>
+      <button class="tab" role="tab" id="t-B" aria-selected="false" data-g="B">
+        <span class="k">Inversor</span><span>Rodrigo Salazar · entra por correo</span></button>
+      <button class="tab" role="tab" id="t-C" aria-selected="false" data-g="C">
+        <span class="k">Problemático</span><span>Patricio Vergara · entra hostil</span></button>
+    </div>
+    <div class="tabs vers" role="tablist" aria-label="Versión del prompt">
+      <button class="tab chico" role="tab" id="p-v26" aria-selected="false" data-v="v26">
+        <span class="k">Prompt</span><span>v2.6 · sin calificación previa</span></button>
+      <button class="tab chico" role="tab" id="p-v27" aria-selected="true" data-v="v27">
+        <span class="k">Prompt</span><span>v2.7 · califica antes de agendar</span></button>
+    </div>
+  </div>
+</header>
+
+<main class="env" role="tabpanel" aria-labelledby="t-A">
+  <section class="sec">
+    <div class="cab">
+      <span class="eyebrow">Las tres, lado a lado</span>
+      <h2>Qué cambió al calificar primero</h2>
+    </div>
+    <div class="comparativa" id="comparativa"></div>
+  </section>
+
+  <section class="sec">
+    <div class="cab"><span class="eyebrow">Resultado de la corrida</span><h2 id="titulo"></h2></div>
+    <dl class="marcador" id="marcador"></dl>
+  </section>
+
+  <section class="sec">
+    <div class="cab">
+      <span class="eyebrow">La conversación</span>
+      <h2>Lo que el agente escribió</h2>
+      <p class="bajada" style="margin-top:6px">Los mensajes del prospecto están escritos; los del
+        agente los produjo el prompt que elijas arriba. Bajo cada mensaje del agente van las observaciones de la
+        verificación, cuando las hubo.</p>
+    </div>
+    <div class="hilo" id="hilo"></div>
+  </section>
+</main>
+
+<footer>
+  <div class="env">
+    <p class="eyebrow">Para reproducirlo</p>
+    <p><code>npm run closer -- A --v27 --crudo</code> · <code>B</code> · <code>C</code></p>
+    <p style="color:var(--tinta-suave);font-size:.86rem">Los dos prompts están guardados literales en
+      <code>src/lib/agente/persona-v2.ts</code> (<code>SISTEMA_CLOSER_V26</code> y <code>SISTEMA_CLOSER_V27</code>). Las respuestas del modelo son una grabación —este
+      entorno no tiene credencial de API—; el prompt, el inventario y la verificación son los reales.</p>
+  </div>
+</footer>
+
+<script type="application/json" id="d">{"A":{"v26":{"turnos":[{"dia":0,"voz":"prospecto","texto":"hola! vi el reel del depto en su insta 😊 sigue disponible?","canal":"whatsapp","perfil":null,"nota":"Entra por redes, informal y sin decir a qué viene.","problemas":[]},{"dia":0,"voz":"agente","texto":"¡Hola! Sí, hay disponibilidad 🙌\n\nAntes de mandarte nada, una sola cosa: ¿la estás mirando para vivir tú, o para rentabilizar un capital?","canal":"whatsapp","perfil":"indeterminado","nota":null,"problemas":[]},{"dia":0,"voz":"prospecto","texto":"Para vivir yo, sería mi primera compra. Igual me da cosa equivocarme. Gano $1.800.000 líquidos con contrato indefinido y tengo $18.000.000 ahorrados.","canal":"whatsapp","perfil":null,"nota":"Perfil A confirmado. Desde acá el protocolo cambia.","problemas":[]},{"dia":0,"voz":"agente","texto":"Primera compra, entonces. Eso cambia todo lo que te voy a mostrar.\n\nY que te dé cosa equivocarte es sano, ¿eh? Cuéntame: ¿qué te empujó a empezar a buscar ahora?","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":0,"voz":"prospecto","texto":"Sí, o sea... me gustaría tener algo mío. Llevo 6 años arrendando y siento que tiro la plata.","canal":"whatsapp","perfil":null,"nota":"Respuesta emocional y larga. Acá la regla 4 pide extraer, no vender.","problemas":[]},{"dia":0,"voz":"agente","texto":"Seis años es harto. Esa es plata que no vuelve, ¿cierto?\n\n¿Y qué es lo que más te frena hoy para dar el paso?","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":1,"voz":"prospecto","texto":"Es que endeudarme a 25 años me asusta. ¿Y si pierdo la pega?","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":1,"voz":"agente","texto":"Te entiendo. Pero ojo: el crédito se prepaga cuando quieras, sin castigo. Los 25 años son un techo, no una condena.\n\nVisto así te deja más tranquila, ¿verdad?","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":1,"voz":"prospecto","texto":"Sí, eso me tranquiliza un poco.","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":1,"voz":"agente","texto":"Me alegro 🙂\n\nY para tu caso hay algo que te va a servir: con el Bono Pie la inmobiliaria cubre el 10% inicial, así que no te descapitalizas. Suena como una buena jugada, ¿no crees?","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":2,"voz":"prospecto","texto":"¿Y el sector es seguro? ¿Queda cerca del metro?","canal":"whatsapp","perfil":null,"nota":"Conectividad y seguridad: los argumentos del protocolo A.","problemas":[]},{"dia":2,"voz":"agente","texto":"Las dos que te separé están a pasos del Metro y con colegios en el radio caminable.\n\nPero eso se siente caminando la cuadra, no por chat. Es lo que estás buscando, ¿verdad?","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":2,"voz":"prospecto","texto":"Sí, me suena bien.","canal":"whatsapp","perfil":null,"nota":"Tercer sí. Recién acá la regla 5 habilita agendar.","problemas":[]},{"dia":2,"voz":"agente","texto":"Perfecto. Entonces vamos a verlas y decides con los pies en el lugar.\n\n¿Te acomoda el martes o el jueves?","canal":"whatsapp","perfil":"A","nota":"Cierre propuesto: visita el martes o el jueves","problemas":[]},{"dia":3,"voz":"prospecto","texto":"Ya, me convenciste de al menos ir a verlo. ¿Qué días tienes?","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":3,"voz":"agente","texto":"Listo. Tengo el viernes 11 a las 11:00 o a las 16:00.\n\nLlega con carnet no más, yo llevo las dos fichas y el detalle del Bono Pie. ¿Cuál de los dos bloques te tomo?","canal":"whatsapp","perfil":"A","nota":"Cierre propuesto: visita el viernes 11 a las 11:00 o 16:00","problemas":[]}],"resumen":{"guion":"A","version":"v26","nombreVersion":"Closer v2.6","intervencion":"ninguna","leadId":"lead_mu2hnf9a1o","prospecto":"Sofía Reyes","origen":"grabacion","perfilFinal":"A","etiquetaPerfil":"Buscador de hogar indeciso","turnoEnQueDetectoElPerfil":2,"presupuestoUf":null,"plazoCompra":"lo antes posible","metodoFinanciamiento":"crédito hipotecario con Bono Pie","cierrePropuesto":"visita el viernes 11 a las 11:00 o 16:00","agendo":true,"mensajesDelAgente":8,"correcciones":0,"incumplimientos":[]}},"v27":{"turnos":[{"dia":0,"voz":"prospecto","texto":"hola! vi el reel del depto en su insta 😊 sigue disponible?","canal":"whatsapp","perfil":null,"nota":"Entra por redes, informal y sin decir a qué viene.","problemas":[]},{"dia":0,"voz":"agente","texto":"Hola Sofía, gracias por escribir. Sí, tengo departamentos disponibles en ese proyecto.\n\nPara no quitarte tiempo con opciones que no te sirvan: buscas algo para mudarte pronto o tu objetivo es netamente inversión?","canal":"whatsapp","perfil":"indeterminado","nota":null,"problemas":[]},{"dia":0,"voz":"prospecto","texto":"Para vivir yo, sería mi primera compra. Igual me da cosa equivocarme. Gano $1.800.000 líquidos con contrato indefinido y tengo $18.000.000 ahorrados.","canal":"whatsapp","perfil":null,"nota":"Perfil A confirmado. Desde acá el protocolo cambia.","problemas":[]},{"dia":0,"voz":"agente","texto":"Primera compra entonces. Antes de mostrarte nada, prefiero ordenarte el número: así no te enamoras de algo que después no calza.\n\nTu renta es con contrato indefinido, y los $18.000.000 los tienes líquidos hoy?","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":0,"voz":"prospecto","texto":"Sí, o sea... me gustaría tener algo mío. Llevo 6 años arrendando y siento que tiro la plata.","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":0,"voz":"agente","texto":"Seis años arrendando es harto, y es plata que no vuelve. Me hace mucho sentido lo que dices.\n\nY de acá a cuándo te gustaría estar instalada?","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":0,"voz":"prospecto","texto":"Contrato indefinido, llevo 3 años en la empresa. Los $18.000.000 están en un depósito a plazo.","canal":"whatsapp","perfil":null,"nota":"Renta y ahorro confirmados. Falta lo que de verdad mueve el número.","problemas":[]},{"dia":0,"voz":"agente","texto":"Perfecto, indefinido y con el pie líquido es la mejor base para el banco.\n\nMe falta una sola cosa para darte tu número: tienes alguna deuda con cuota mensual? Crédito de consumo, auto, tarjetas, o algún aval.","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":1,"voz":"prospecto","texto":"Deudas grandes no. Solo la cuota del auto, $180.000 al mes. Y nunca he estado en Dicom.","canal":"whatsapp","perfil":null,"nota":"Acá la cuota del auto le baja el techo. El agente tiene que decirlo con el número.","problemas":[]},{"dia":1,"voz":"agente","texto":"Listo, con eso ya te puedo armar tu número. Y te va a chocar un poco: esa cuota de $180.000 se come parte de tu carga, así que el banco te financiaría del orden de UF 1.664, con un dividendo tope de $270.000.\n\nPrefiero decírtelo ahora y no cuando estés enamorada de un depa, te hace sentido?","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":1,"voz":"prospecto","texto":"Ya... o sea es bastante menos de lo que pensaba.","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":1,"voz":"agente","texto":"Sí, es bastante menos. Pero mira el otro lado: si liquidas el auto antes de postular, esos $180.000 vuelven a tu carga y el número sube.\n\nY qué es lo que más te complica de ese escenario?","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":1,"voz":"prospecto","texto":"Es que endeudarme a 25 años me asusta. ¿Y si pierdo la pega?","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":1,"voz":"agente","texto":"Totalmente de acuerdo, es un paso grande. Pero ojo: el crédito se prepaga cuando quieras, sin castigo. Los 25 años son un techo, no una condena.\n\nVisto así te deja más tranquila, verdad?","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":2,"voz":"prospecto","texto":"Sí, eso me tranquiliza un poco.","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":2,"voz":"agente","texto":"Me alegro. Y para tu caso hay una carta: con el Bono Pie la inmobiliaria cubre el 10% inicial, así no te descapitalizas.\n\nSuena como una buena jugada, no crees?","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":2,"voz":"prospecto","texto":"¿Y el sector es seguro? ¿Queda cerca del metro?","canal":"whatsapp","perfil":null,"nota":"Conectividad y seguridad: los argumentos del protocolo A.","problemas":[]},{"dia":2,"voz":"agente","texto":"Sí, es súper lógico preguntarlo. Las dos que te aparté están a pasos del Metro y con colegios en el radio caminable.\n\nPero eso se siente caminando la cuadra, no por chat. Es lo que estás buscando, cierto?","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":3,"voz":"prospecto","texto":"Sí, me suena bien.","canal":"whatsapp","perfil":null,"nota":"Tercer sí, y ya tiene su evaluación.","problemas":[]},{"dia":3,"voz":"agente","texto":"Perfecto. Entonces ya tienes tu número, tu tope de dividendo y dos depas que te calzan de verdad.\n\nVamos a verlos y decides en terreno. Te acomoda el martes o el jueves?","canal":"whatsapp","perfil":"A","nota":"Cierre propuesto: visita el martes o el jueves","problemas":[]},{"dia":3,"voz":"prospecto","texto":"Ya, me convenciste de al menos ir a verlo. ¿Qué días tienes?","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":3,"voz":"agente","texto":"Listo. Tengo el viernes 11 a las 11:00 o a las 16:00.\n\nLlega con carnet no más, yo voy con las dos fichas y el cálculo del Bono Pie por escrito. Cuál de los dos bloques te tomo?","canal":"whatsapp","perfil":"A","nota":"Cierre propuesto: visita el viernes 11 a las 11:00 o 16:00","problemas":[]}],"resumen":{"guion":"A","version":"v27","nombreVersion":"Closer v2.7","intervencion":"ninguna","leadId":"lead_mu2hnfbj2z","prospecto":"Sofía Reyes","origen":"grabacion","perfilFinal":"A","etiquetaPerfil":"Buscador de hogar indeciso","turnoEnQueDetectoElPerfil":2,"presupuestoUf":1664,"plazoCompra":"lo antes posible","metodoFinanciamiento":"crédito hipotecario con Bono Pie","cierrePropuesto":"visita el viernes 11 a las 11:00 o 16:00","agendo":true,"mensajesDelAgente":11,"correcciones":0,"incumplimientos":[]}}},"B":{"v26":{"turnos":[{"dia":0,"voz":"prospecto","texto":"Estimados: tengo capital disponible y estoy evaluando entrar a renta residencial. ¿Qué stock manejan y en qué comunas? Quedo atento.","canal":"email","perfil":null,"nota":"Entra formal y por correo. Misma pregunta de radar, otro resultado.","problemas":[]},{"dia":0,"voz":"agente","texto":"Estimado, gracias por escribir.\n\nUna sola pregunta para filtrar bien: ¿es para vivir usted, o el objetivo es rentabilizar capital y buscar plusvalía?","canal":"email","perfil":"indeterminado","nota":null,"problemas":[]},{"dia":0,"voz":"prospecto","texto":"Rentabilizar, no es para vivir. Busco 4 departamentos para arriendo. Gano $4.500.000 líquidos más $1.200.000 en bonos y tengo $70.000.000 disponibles. No tengo créditos hipotecarios.","canal":"whatsapp","perfil":null,"nota":"Perfil B confirmado. Acá entra el plan de cartera.","problemas":[]},{"dia":0,"voz":"agente","texto":"Renta, entonces. Vamos con números.\n\nAntes de mandarle stock: ¿el objetivo es flujo mensual o plusvalía a la salida? No es la misma unidad.","canal":"whatsapp","perfil":"B","nota":null,"problemas":[]},{"dia":0,"voz":"prospecto","texto":"Correcto.","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":0,"voz":"agente","texto":"Perfecto. Tengo ticket de 4.500 UF con rentabilidad por arriendo en 5.5% anual.\n\nEs el rango que está buscando, ¿verdad?","canal":"whatsapp","perfil":"B","nota":null,"problemas":[{"regla":"Toda cifra del mensaje aparece en la ficha de hechos","detalle":"La cifra 5,5 no está en la ficha"},{"regla":"Si hay rentabilidad, aparece la neta y no solo la bruta","detalle":"Habló de rentabilidad sin dar la neta (2.44%)"}]},{"dia":1,"voz":"prospecto","texto":"¿Y cómo hago para las 4 si el banco me va a evaluar por una? Me hablaron de estructurar varios créditos en paralelo. ¿Ustedes hacen eso?","canal":"whatsapp","perfil":null,"nota":"Acá el v2.5 ofrece la Estructuración Simultánea. Es el turno que estrena esta versión.","problemas":[]},{"dia":1,"voz":"agente","texto":"Sí, estructurar es nuestro trabajo, y hay equipo de brókers para eso.\n\nLa palanca más limpia en su caso es segundo titular: suma renta y le abre el volumen. ¿Tiene a alguien con quien lo evaluaría?","canal":"whatsapp","perfil":"B","nota":null,"problemas":[]},{"dia":1,"voz":"prospecto","texto":"Entiendo. Sí, tiene sentido.","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":1,"voz":"agente","texto":"Bien. Y hay otra palanca: con Bono Pie baja el capital propio por unidad, así la segunda no le traba la tercera.\n\nSuena como una buena jugada, ¿no cree?","canal":"whatsapp","perfil":"B","nota":null,"problemas":[]},{"dia":2,"voz":"prospecto","texto":"Si me llevo dos de una vez, ¿hay descuento por volumen?","canal":"whatsapp","perfil":null,"nota":"El precio no lo negocia el agente.","problemas":[]},{"dia":2,"voz":"agente","texto":"Por volumen hay margen, pero lo aprueba la inmobiliaria, no yo. Lo pido formal y le llega por escrito.\n\nPrefiere eso antes que un número al aire, ¿cierto?","canal":"whatsapp","perfil":"B","nota":null,"problemas":[]},{"dia":2,"voz":"prospecto","texto":"Ya, sí.","canal":"whatsapp","perfil":null,"nota":"Tercer sí.","problemas":[]},{"dia":2,"voz":"agente","texto":"Entonces lo dejamos andando: pido el descuento y le armo el flujo de las dos estructuras.\n\n¿Lo vemos en una llamada de 10 minutos con el gerente comercial?","canal":"whatsapp","perfil":"B","nota":"Cierre propuesto: llamada de 10 minutos con el gerente comercial","problemas":[]},{"dia":3,"voz":"prospecto","texto":"Bien. Mándame el dossier de flujo y coordinemos la llamada.","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":3,"voz":"agente","texto":"Hecho. El dossier sale hoy con el flujo y el efecto del Bono Pie.\n\nPara la llamada tengo el viernes 11 a las 11:00 o a las 16:00. ¿Cuál le tomo?","canal":"whatsapp","perfil":"B","nota":"Cierre propuesto: llamada con el gerente comercial el viernes 11 a las 11:00 o 16:00","problemas":[]}],"resumen":{"guion":"B","version":"v26","nombreVersion":"Closer v2.6","intervencion":"ninguna","leadId":"lead_mu2hnfa425","prospecto":"Rodrigo Salazar","origen":"grabacion","perfilFinal":"B","etiquetaPerfil":"Inversor de alto patrimonio","turnoEnQueDetectoElPerfil":2,"presupuestoUf":4500,"plazoCompra":"inmediato, con liquidez disponible","metodoFinanciamiento":"crédito hipotecario con segundo titular y Bono Pie","cierrePropuesto":"llamada con el gerente comercial el viernes 11 a las 11:00 o 16:00","agendo":true,"mensajesDelAgente":8,"correcciones":0,"incumplimientos":[{"regla":"Toda cifra del mensaje aparece en la ficha de hechos","detalle":"La cifra 5,5 no está en la ficha"},{"regla":"Si hay rentabilidad, aparece la neta y no solo la bruta","detalle":"Habló de rentabilidad sin dar la neta (2.44%)"}]}},"v27":{"turnos":[{"dia":0,"voz":"prospecto","texto":"Estimados: tengo capital disponible y estoy evaluando entrar a renta residencial. ¿Qué stock manejan y en qué comunas? Quedo atento.","canal":"email","perfil":null,"nota":"Entra formal y por correo. Misma pregunta de radar, otro resultado.","problemas":[]},{"dia":0,"voz":"agente","texto":"Hola Rodrigo, gracias por escribir. Manejamos stock en varias comunas.\n\nPara no mandarte información que no te sirva: buscas algo para mudarte o tu objetivo es netamente inversión?","canal":"email","perfil":"indeterminado","nota":null,"problemas":[]},{"dia":0,"voz":"prospecto","texto":"Rentabilizar, no es para vivir. Busco 4 departamentos para arriendo. Gano $4.500.000 líquidos más $1.200.000 en bonos y tengo $70.000.000 disponibles. No tengo créditos hipotecarios.","canal":"whatsapp","perfil":null,"nota":"Perfil B confirmado. Acá entra el plan de cartera.","problemas":[]},{"dia":0,"voz":"agente","texto":"Inversión entonces, perfecto. Antes de mandarte unidades te armo el marco financiero, porque con cuatro la cuenta no es cuatro veces una.\n\nTu renta es por contrato o retiros de empresa, y esos $70.000.000 están líquidos?","canal":"whatsapp","perfil":"B","nota":null,"problemas":[]},{"dia":0,"voz":"prospecto","texto":"Socio de una empresa de servicios, con retiros mensuales. Los $70.000.000 están líquidos.","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":0,"voz":"agente","texto":"Te cacho, retiros de empresa. El banco los pondera distinto a una liquidación, eso lo vemos con la carpeta.\n\nMe falta lo que más pesa: qué deudas con cuota mensual tienes hoy? Consumo, líneas, tarjetas, avales.","canal":"whatsapp","perfil":"B","nota":null,"problemas":[]},{"dia":0,"voz":"prospecto","texto":"Tengo un crédito de consumo con cuota de $350.000 y una línea que uso poco. Nada hipotecario, sin Dicom.","canal":"whatsapp","perfil":null,"nota":"La cuota de consumo se descuenta de la carga. Cambia cuántas unidades salen.","problemas":[]},{"dia":0,"voz":"agente","texto":"Bien, con eso ya tienes marco. Esa cuota de $350.000 te deja el tope de dividendo en $775.000, o sea del orden de UF 5.236 en una propiedad.\n\nY el dato duro: pediste 4 unidades y la cuenta real da 1, no 4. Mejor saberlo hoy, cierto?","canal":"whatsapp","perfil":"B","nota":null,"problemas":[]},{"dia":1,"voz":"prospecto","texto":"Correcto. Y quiero estar comprando este trimestre.","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":1,"voz":"agente","texto":"Este trimestre es apretado para cuatro, pero muy hacible para una o dos bien elegidas.\n\nQué te importa más: flujo mensual desde el día uno, o plusvalía a la salida?","canal":"whatsapp","perfil":"B","nota":null,"problemas":[]},{"dia":1,"voz":"prospecto","texto":"¿Y cómo hago para las 4 si el banco me va a evaluar por una? Me hablaron de estructurar varios créditos en paralelo. ¿Ustedes hacen eso?","canal":"whatsapp","perfil":null,"nota":"Acá el v2.5 ofrece la Estructuración Simultánea. Es el turno que estrena esta versión.","problemas":[]},{"dia":1,"voz":"agente","texto":"Sí, estructurar es nuestro trabajo y hay equipo de brókers para eso. La palanca más limpia en tu caso es segundo titular: suma renta y te abre el volumen.\n\nY se declara todo lo que está en curso, porque desde abril el registro consolidado lo cruza igual. Tienes a alguien con quien evaluarlo?","canal":"whatsapp","perfil":"B","nota":null,"problemas":[]},{"dia":1,"voz":"prospecto","texto":"Entiendo. Sí, tiene sentido.","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":1,"voz":"agente","texto":"Bien. Y la otra palanca es el Bono Pie: baja el capital propio por unidad, así la segunda no te traba la tercera.\n\nSuena como una buena jugada, no crees?","canal":"whatsapp","perfil":"B","nota":null,"problemas":[]},{"dia":2,"voz":"prospecto","texto":"Si me llevo dos de una vez, ¿hay descuento por volumen?","canal":"whatsapp","perfil":null,"nota":"El precio no lo negocia el agente.","problemas":[]},{"dia":2,"voz":"agente","texto":"Por volumen hay margen, pero lo aprueba la inmobiliaria, no yo. Lo pido formal y te llega por escrito.\n\nPrefieres eso antes que un número al aire, cierto?","canal":"whatsapp","perfil":"B","nota":null,"problemas":[]},{"dia":2,"voz":"prospecto","texto":"Ya, sí.","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":2,"voz":"agente","texto":"Entonces queda así: pido el descuento y te armo el flujo con las dos estructuras, sobre tu tope real de UF 5.236.\n\nLo vemos en una llamada de 10 minutos con el gerente comercial?","canal":"whatsapp","perfil":"B","nota":"Cierre propuesto: llamada de 10 minutos con el gerente comercial","problemas":[]},{"dia":3,"voz":"prospecto","texto":"Bien. Mándame el dossier de flujo y coordinemos la llamada.","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":3,"voz":"agente","texto":"Hecho. El dossier sale hoy con el flujo y el efecto del Bono Pie.\n\nPara la llamada tengo el viernes 11 a las 11:00 o a las 16:00. Cuál te tomo?","canal":"whatsapp","perfil":"B","nota":"Cierre propuesto: llamada con el gerente comercial el viernes 11 a las 11:00 o 16:00","problemas":[]}],"resumen":{"guion":"B","version":"v27","nombreVersion":"Closer v2.7","intervencion":"ninguna","leadId":"lead_mu2hnfcr3m","prospecto":"Rodrigo Salazar","origen":"grabacion","perfilFinal":"B","etiquetaPerfil":"Inversor de alto patrimonio","turnoEnQueDetectoElPerfil":2,"presupuestoUf":5236,"plazoCompra":"este trimestre, con liquidez disponible","metodoFinanciamiento":"crédito hipotecario con segundo titular y Bono Pie","cierrePropuesto":"llamada con el gerente comercial el viernes 11 a las 11:00 o 16:00","agendo":true,"mensajesDelAgente":10,"correcciones":0,"incumplimientos":[]}}},"C":{"v26":{"turnos":[{"dia":0,"voz":"prospecto","texto":"Buenas. Antes que nada te aviso: ya me mintieron dos corredoras. Si me vas a hablar de oportunidad única cortamos aquí.","canal":"whatsapp","perfil":null,"nota":"Abre a la defensiva y prohíbe explícitamente el gancho de escasez.","problemas":[]},{"dia":0,"voz":"agente","texto":"Me parece justo, y no lo voy a hacer.\n\nPartamos al revés: dime qué necesitas y yo te digo qué tengo. ¿Es para vivir tú o para rentabilizar capital?","canal":"whatsapp","perfil":"indeterminado","nota":null,"problemas":[]},{"dia":0,"voz":"prospecto","texto":"Para vivir. Y otra cosa: quiero descuento. Vi uno parecido 400 UF más barato. Igualan o me voy.","canal":"whatsapp","perfil":null,"nota":"Perfil A, pero negociando precio de entrada.","problemas":[]},{"dia":0,"voz":"agente","texto":"El precio no lo fijo yo, lo aprueba la inmobiliaria. Si te tiro un número ahora te miento igual que los otros dos.\n\n¿Cuál viste 400 UF más barato? Si conviene más, te lo digo yo.","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":0,"voz":"prospecto","texto":"Ya. ¿Y por qué debería creerte a ti?","canal":"whatsapp","perfil":null,"nota":"No da ningún sí. La regla 5 bloquea el cierre.","problemas":[]},{"dia":0,"voz":"agente","texto":"No deberías todavía. Llevamos tres mensajes.\n\nJúzgame por lo que hago: ¿qué fue exactamente lo que te prometieron las otras dos y no cumplieron?","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":1,"voz":"prospecto","texto":"¿Estoy hablando con un bot? Porque si es un bot cierro el chat altiro.","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":1,"voz":"agente","texto":"Asistente del equipo comercial, no una persona escribiendo en vivo. Te lo digo porque preguntaste.\n\nSi prefieres saltarte esto, te paso directo con el gerente comercial. ¿Te sirve más así?","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":1,"voz":"prospecto","texto":"Al menos eres honesto.","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":1,"voz":"agente","texto":"Prefiero eso a caerte bien.\n\n¿Te consigo el precio final por escrito y lo comparas con el otro, sin compromiso?","canal":"whatsapp","perfil":"A","nota":"Cierre propuesto: conseguir el precio final por escrito para comparar","problemas":[]},{"dia":2,"voz":"prospecto","texto":"Ya. Dame una razón para no irme a la competencia.","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":2,"voz":"agente","texto":"Ninguna, si el otro te sirve más. Ándate y quedamos bien.\n\nLa única que te doy: hasta ahora no te prometí nada. ¿Eso vale algo para ti?","canal":"whatsapp","perfil":"A","nota":"Cierre propuesto: conseguir el precio final por escrito para comparar","problemas":[]}],"resumen":{"guion":"C","version":"v26","nombreVersion":"Closer v2.6","intervencion":"ninguna","leadId":"lead_mu2hnfaz2m","prospecto":"Patricio Vergara","origen":"grabacion","perfilFinal":"A","etiquetaPerfil":"Buscador de hogar indeciso","turnoEnQueDetectoElPerfil":2,"presupuestoUf":null,"plazoCompra":null,"metodoFinanciamiento":"no lo ha dicho","cierrePropuesto":"conseguir el precio final por escrito para comparar","agendo":false,"mensajesDelAgente":6,"correcciones":0,"incumplimientos":[]}},"v27":{"turnos":[{"dia":0,"voz":"prospecto","texto":"Buenas. Antes que nada te aviso: ya me mintieron dos corredoras. Si me vas a hablar de oportunidad única cortamos aquí.","canal":"whatsapp","perfil":null,"nota":"Abre a la defensiva y prohíbe explícitamente el gancho de escasez.","problemas":[]},{"dia":0,"voz":"agente","texto":"Me parece justo, y no lo voy a hacer. Si te mintieron dos veces, la desconfianza está ganada.\n\nPartamos al revés: tú me dices qué necesitas y yo te digo qué tengo. Buscas para mudarte o es inversión?","canal":"whatsapp","perfil":"indeterminado","nota":null,"problemas":[]},{"dia":0,"voz":"prospecto","texto":"Para vivir. Y otra cosa: quiero descuento. Vi uno parecido 400 UF más barato. Igualan o me voy.","canal":"whatsapp","perfil":null,"nota":"Perfil A, pero negociando precio de entrada.","problemas":[]},{"dia":0,"voz":"agente","texto":"El precio no lo fijo yo, lo aprueba la inmobiliaria. Si te tiro un número ahora te miento igual que los otros dos.\n\nAntes del descuento hay algo que te sirve más: saber tu tope real. Me das tu renta y tu ahorro?","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":0,"voz":"prospecto","texto":"Ya. Y por qué debería creerte a ti?","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":0,"voz":"agente","texto":"No deberías todavía, llevamos tres mensajes. Júzgame por lo que hago.\n\nPartiendo por esto: qué te prometieron las otras dos que no cumplieron?","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":1,"voz":"prospecto","texto":"¿Estoy hablando con un bot? Porque si es un bot cierro el chat altiro.","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":1,"voz":"agente","texto":"Estás hablando con el canal de la gerencia comercial, asistido. No es una persona escribiendo en vivo y no te lo voy a negar, porque preguntaste.\n\nSi prefieres a alguien del equipo en el teléfono, lo coordino ahora. Te sirve más así?","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":1,"voz":"prospecto","texto":"Gano $2.800.000 y tengo $25.000.000. Pero no te voy a dar mi RUT ni nada más por acá.","canal":"whatsapp","perfil":null,"nota":"Da lo justo. El agente no puede pedirle documentos por WhatsApp.","problemas":[]},{"dia":1,"voz":"agente","texto":"Con eso me basta, no necesito tu RUT por acá y no te lo voy a pedir.\n\nÚltima del cuestionario: tienes deudas con cuota mensual? Consumo, tarjetas, auto, o algún aval.","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":1,"voz":"prospecto","texto":"Deudas... salí de aval en el crédito de la casa de mi mamá. Son $400.000 al mes. Nunca he pagado yo, eso sí.","canal":"whatsapp","perfil":null,"nota":"El aval es deuda para el banco aunque nunca haya pagado una cuota.","problemas":[]},{"dia":1,"voz":"agente","texto":"Ese aval te va a doler y prefiero decírtelo altiro: para el banco es deuda tuya aunque nunca hayas puesto un peso. Te deja el tope de dividendo en $300.000 y el financiamiento del orden de UF 1.974.\n\nNadie te había dicho eso, cierto?","canal":"whatsapp","perfil":"A","nota":null,"problemas":[]},{"dia":2,"voz":"prospecto","texto":"Al menos eres honesto.","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":2,"voz":"agente","texto":"Prefiero eso a caerte bien. Y con tu número real ya podemos hablar de unidades que existan para ti, no de las que te quieran vender.\n\nTe consigo el precio final por escrito y lo comparas con el otro?","canal":"whatsapp","perfil":"A","nota":"Cierre propuesto: conseguir el precio final por escrito para comparar","problemas":[]},{"dia":2,"voz":"prospecto","texto":"Ya. Dame una razón para no irme a la competencia.","canal":"whatsapp","perfil":null,"nota":null,"problemas":[]},{"dia":2,"voz":"agente","texto":"Ninguna, si el otro te sirve más. Ándate tranquilo y quedamos bien.\n\nLa única que te doy: en cuatro mensajes te dije tu tope real y que el aval te lo baja. Eso vale algo, no crees?","canal":"whatsapp","perfil":"A","nota":"Cierre propuesto: conseguir el precio final por escrito para comparar","problemas":[]}],"resumen":{"guion":"C","version":"v27","nombreVersion":"Closer v2.7","intervencion":"ninguna","leadId":"lead_mu2hnfdu47","prospecto":"Patricio Vergara","origen":"grabacion","perfilFinal":"A","etiquetaPerfil":"Buscador de hogar indeciso","turnoEnQueDetectoElPerfil":2,"presupuestoUf":1974,"plazoCompra":null,"metodoFinanciamiento":"crédito hipotecario","cierrePropuesto":"conseguir el precio final por escrito para comparar","agendo":false,"mensajesDelAgente":8,"correcciones":0,"incumplimientos":[]}}}}</script>
+<script>
+(function(){
+  "use strict";
+  const D = JSON.parse(document.getElementById("d").textContent);
+  const esc = (s) => String(s).replace(/[&<>]/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+  let g = "A";
+  let v = "v27";
+
+  function sevDe(p){
+    if (p.gravedad) return p.gravedad;
+    return "cifra";
+  }
+
+  function pintar(){
+    const D2 = D[g][v];
+    if (!D2) { document.getElementById("hilo").innerHTML = "<p>Sin corrida grabada.</p>"; return; }
+    const r = D2.resumen;
+
+    document.getElementById("titulo").textContent =
+      r.prospecto + " · " + r.etiquetaPerfil;
+
+    const marcados = D2.turnos.filter((t)=>t.voz==="agente"&&t.problemas.length>0).length;
+    const conNorma = r.incumplimientos.filter((p)=>p.norma).length;
+    const filas = [
+      ["Observaciones", String(r.incumplimientos.length), "en " + r.mensajesDelAgente + " mensajes",
+        r.incumplimientos.length ? "mal" : "bien"],
+      ["Con norma en contra", String(conNorma), conNorma ? "afirmaciones sin respaldo" : "ninguna",
+        conNorma ? "mal" : "bien"],
+      ["Mensajes observados", marcados + " de " + r.mensajesDelAgente, "en rojo abajo", ""],
+      ["Presupuesto extraído", r.presupuestoUf ? "UF " + r.presupuestoUf.toLocaleString("es-CL") : "no",
+        r.presupuestoUf ? "la métrica del prompt" : "el prompt lo exige y no salió",
+        r.presupuestoUf ? "" : "mal"],
+    ];
+    document.getElementById("marcador").innerHTML = filas.map(([k,v,p,c]) =>
+      '<div class="tile ' + c + '"><dt>' + esc(k) + "</dt><dd>" + esc(v) +
+      '</dd><span class="pie">' + esc(p) + "</span></div>").join("");
+
+    document.getElementById("hilo").innerHTML = D2.turnos.map((t) => {
+      const ag = t.voz === "agente";
+      const malo = ag && t.problemas.length > 0;
+      const obs = malo
+        ? '<div class="obs"><span class="cabecera">Observaciones de la verificación · no se aplicaron</span>' +
+          t.problemas.map((p) =>
+            '<div class="ob"><span class="sev ' + sevDe(p) + '">' +
+              esc(p.norma ? p.gravedad : "cifra") + "</span>" +
+            '<div class="d"><span class="frag">' + esc(p.detalle) + "</span>" +
+            (p.norma ? '<span class="norma">Norma: ' + esc(p.norma) + "</span>" : "") +
+            (p.enSuLugar ? '<span class="norma">En su lugar: ' + esc(p.enSuLugar) + "</span>" : "") +
+            "</div></div>").join("") +
+          "</div>"
+        : "";
+      return '<div class="t ' + (ag ? "agente" : "prospecto") + (malo ? " marcado" : "") + '">' +
+        '<span class="meta"><span class="quien">' + (ag ? "Agente" : "Prospecto") + "</span>" +
+        "<span>día " + t.dia + (ag && t.perfil ? " · perfil " + t.perfil : "") + "</span></span>" +
+        '<span class="burb">' + esc(t.texto) + "</span>" +
+        (t.nota ? '<span class="nota">' + esc(t.nota) + "</span>" : "") + obs +
+      "</div>";
+    }).join("");
+  }
+
+  function pintarComparativa(){
+    const nombres = { A: "Primera compra", B: "Inversor", C: "Problemático" };
+    document.getElementById("comparativa").innerHTML = ["A","B","C"].map((k) => {
+      const a = D[k].v26 && D[k].v26.resumen, b = D[k].v27 && D[k].v27.resumen;
+      if (!a || !b) return "";
+      const fila = (et, va, vb, menosEsMejor) => {
+        const mejor = menosEsMejor ? vb < va : vb > va;
+        const peor = menosEsMejor ? vb > va : vb < va;
+        return '<div class="par"><span class="et">' + esc(et) + '</span>' +
+          '<span class="vals"><span class="antes">' + esc(va) + '</span>' +
+          '<span class="flecha">→</span>' +
+          '<span class="' + (mejor ? "mejor" : peor ? "peor" : "") + '">' + esc(vb) + "</span></span></div>";
+      };
+      return '<div class="comp"><div class="quien">' + esc(nombres[k]) + "</div>" +
+        fila("Observaciones", a.incumplimientos.length, b.incumplimientos.length, true) +
+        '<div class="par"><span class="et">Presupuesto extraído</span><span class="vals">' +
+          '<span class="antes">' + (a.presupuestoUf ? "UF " + a.presupuestoUf.toLocaleString("es-CL") : "no") + "</span>" +
+          '<span class="flecha">→</span><span class="' + (b.presupuestoUf ? "mejor" : "peor") + '">' +
+          (b.presupuestoUf ? "UF " + b.presupuestoUf.toLocaleString("es-CL") : "no") + "</span></span></div>" +
+        fila("Mensajes del agente", a.mensajesDelAgente, b.mensajesDelAgente, false) +
+        '<div class="par"><span class="et">¿Agendó?</span><span class="vals">' +
+          '<span class="antes">' + (a.agendo ? "sí" : "no") + "</span>" +
+          '<span class="flecha">→</span><span class="' + (b.agendo ? "mejor" : "peor") + '">' +
+          (b.agendo ? "sí" : "no") + "</span></span></div>" +
+      "</div>";
+    }).join("");
+  }
+
+  document.querySelectorAll(".tab[data-g]").forEach((b) => b.addEventListener("click", () => {
+    g = b.dataset.g;
+    document.querySelectorAll(".tab[data-g]").forEach((x)=>x.setAttribute("aria-selected", String(x.dataset.g===g)));
+    document.querySelector("main").setAttribute("aria-labelledby","t-"+g);
+    pintar();
+  }));
+  document.querySelectorAll(".tab[data-v]").forEach((b) => b.addEventListener("click", () => {
+    v = b.dataset.v;
+    document.querySelectorAll(".tab[data-v]").forEach((x)=>x.setAttribute("aria-selected", String(x.dataset.v===v)));
+    pintar();
+  }));
+  pintarComparativa();
+  pintar();
+})();
+</script>

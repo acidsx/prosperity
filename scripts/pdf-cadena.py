@@ -176,7 +176,7 @@ def pie(canvas, doc):
 
 
 def main():
-    datos = json.loads((RAIZ / "mockup" / "v26.min.json").read_text())
+    datos = json.loads((RAIZ / "mockup" / f"{VERSION}.min.json").read_text())
 
     doc = BaseDocTemplate(
         str(SALIDA), pagesize=A4,

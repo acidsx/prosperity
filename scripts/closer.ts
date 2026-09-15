@@ -17,7 +17,11 @@ import { proveedorEnVivo, proveedorGrabado, type Grabacion } from "../src/lib/ag
 import { tiendaMemoria } from "../src/lib/datos/memoria";
 import { ANCLA_GRABACION, simularCloser, type GuionCloser } from "../src/lib/simulacion/closer";
 
-function grabacion(guion: GuionCloser, version: "v1" | "v2" | "v25" | "v26", crudo: boolean): Grabacion {
+function grabacion(
+  guion: GuionCloser,
+  version: "v1" | "v2" | "v25" | "v26" | "v27",
+  crudo: boolean,
+): Grabacion {
   const sufijo = version === "v1" ? "" : `-${version}`;
   const ruta = join(
     process.cwd(),
@@ -45,8 +49,10 @@ function envolver(texto: string, ancho = 74, sangria = "  "): string {
 
 async function principal() {
   const guion = (process.argv.find((arg) => arg === "A" || arg === "B" || arg === "C") ?? "A") as GuionCloser;
-  const version = process.argv.includes("--v26")
-    ? ("v26" as const)
+  const version = process.argv.includes("--v27")
+    ? ("v27" as const)
+    : process.argv.includes("--v26")
+      ? ("v26" as const)
     : process.argv.includes("--v25")
       ? ("v25" as const)
     : process.argv.includes("--v2")

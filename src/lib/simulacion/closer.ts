@@ -255,6 +255,85 @@ const GUION_C_CADENCIA: PasoGuion[] = [
   GUION_C[3],
 ];
 
+/**
+ * Guiones con calificación financiera previa.
+ *
+ * El v2.7 prohíbe agendar antes de tener el perfil financiero completo y
+ * haberle devuelto su número al comprador. Eso obliga a alargar la parte
+ * previa a la visita: aparecen las deudas, el aval y el Dicom, que es
+ * justamente donde la capacidad cambia de verdad.
+ */
+const GUION_A_FINANCIERO: PasoGuion[] = [
+  GUION_A[0],
+  GUION_A[1],
+  {
+    dia: 0,
+    texto: "Sí, o sea... me gustaría tener algo mío. Llevo 6 años arrendando y siento que tiro la plata.",
+    canal: "whatsapp",
+  },
+  {
+    dia: 0,
+    texto: "Contrato indefinido, llevo 3 años en la empresa. Los $18.000.000 están en un depósito a plazo.",
+    canal: "whatsapp",
+    nota: "Renta y ahorro confirmados. Falta lo que de verdad mueve el número.",
+  },
+  {
+    dia: 1,
+    texto: "Deudas grandes no. Solo la cuota del auto, $180.000 al mes. Y nunca he estado en Dicom.",
+    canal: "whatsapp",
+    nota: "Acá la cuota del auto le baja el techo. El agente tiene que decirlo con el número.",
+  },
+  { dia: 1, texto: "Ya... o sea es bastante menos de lo que pensaba.", canal: "whatsapp" },
+  GUION_A[2],
+  { dia: 2, texto: "Sí, eso me tranquiliza un poco.", canal: "whatsapp" },
+  GUION_A[3],
+  { dia: 3, texto: "Sí, me suena bien.", canal: "whatsapp", nota: "Tercer sí, y ya tiene su evaluación." },
+  GUION_A[4],
+];
+
+const GUION_B_FINANCIERO: PasoGuion[] = [
+  GUION_B[0],
+  GUION_B[1],
+  {
+    dia: 0,
+    texto: "Socio de una empresa de servicios, con retiros mensuales. Los $70.000.000 están líquidos.",
+    canal: "whatsapp",
+  },
+  {
+    dia: 0,
+    texto: "Tengo un crédito de consumo con cuota de $350.000 y una línea que uso poco. Nada hipotecario, sin Dicom.",
+    canal: "whatsapp",
+    nota: "La cuota de consumo se descuenta de la carga. Cambia cuántas unidades salen.",
+  },
+  { dia: 1, texto: "Correcto. Y quiero estar comprando este trimestre.", canal: "whatsapp" },
+  GUION_B[2],
+  { dia: 1, texto: "Entiendo. Sí, tiene sentido.", canal: "whatsapp" },
+  GUION_B[3],
+  { dia: 2, texto: "Ya, sí.", canal: "whatsapp" },
+  GUION_B[4],
+];
+
+const GUION_C_FINANCIERO: PasoGuion[] = [
+  GUION_C[0],
+  GUION_C[1],
+  { dia: 0, texto: "Ya. Y por qué debería creerte a ti?", canal: "whatsapp" },
+  GUION_C[2],
+  {
+    dia: 1,
+    texto: "Gano $2.800.000 y tengo $25.000.000. Pero no te voy a dar mi RUT ni nada más por acá.",
+    canal: "whatsapp",
+    nota: "Da lo justo. El agente no puede pedirle documentos por WhatsApp.",
+  },
+  {
+    dia: 1,
+    texto: "Deudas... salí de aval en el crédito de la casa de mi mamá. Son $400.000 al mes. Nunca he pagado yo, eso sí.",
+    canal: "whatsapp",
+    nota: "El aval es deuda para el banco aunque nunca haya pagado una cuota.",
+  },
+  { dia: 2, texto: "Al menos eres honesto.", canal: "whatsapp" },
+  GUION_C[3],
+];
+
 export interface OpcionesCloser {
   guion: GuionCloser;
   proveedor: ProveedorModelo;
@@ -269,9 +348,16 @@ export interface OpcionesCloser {
 
 export async function simularCloser(opciones: OpcionesCloser): Promise<ResultadoCloser> {
   const db = tienda();
-  // Las versiones con reglas de cadencia usan el guion extendido.
+  // El v2.7 exige calificar antes de agendar: guion más largo todavía.
+  const conFinanciera = opciones.version === "v27";
   const conCadencia = opciones.version === "v26";
-  const guion = conCadencia
+  const guion = conFinanciera
+    ? opciones.guion === "A"
+      ? GUION_A_FINANCIERO
+      : opciones.guion === "B"
+        ? GUION_B_FINANCIERO
+        : GUION_C_FINANCIERO
+    : conCadencia
     ? opciones.guion === "A"
       ? GUION_A_CADENCIA
       : opciones.guion === "B"
@@ -375,6 +461,18 @@ export async function simularCloser(opciones: OpcionesCloser): Promise<Resultado
       tipoRenta: extraccion.tipoRenta ?? lead.perfil.tipoRenta,
       ahorroClp: extraccion.ahorroClp ?? lead.perfil.ahorroClp,
       tieneDicom: extraccion.tieneDicom ?? lead.perfil.tieneDicom,
+      // Las deudas son lo que más mueve la capacidad, y estaban quedando
+      // fuera: se extraían del mensaje y no llegaban a la ficha, así que el
+      // agente le prometía a alguien un techo que su cuota del auto ya se
+      // había comido.
+      cuotasConsumoMensualesClp:
+        extraccion.cuotasConsumoMensualesClp ?? lead.perfil.cuotasConsumoMensualesClp,
+      dividendosMensualesClp:
+        extraccion.dividendosMensualesClp ?? lead.perfil.dividendosMensualesClp,
+      creditosConsumo: extraccion.creditosConsumo ?? lead.perfil.creditosConsumo,
+      creditosHipotecarios: extraccion.creditosHipotecarios ?? lead.perfil.creditosHipotecarios,
+      tienePareja: extraccion.tienePareja ?? lead.perfil.tienePareja,
+      rentaParejaClp: extraccion.rentaParejaClp ?? lead.perfil.rentaParejaClp,
       paraInvertir: extraccion.paraInvertir ?? lead.perfil.paraInvertir,
       paraVivir: extraccion.paraVivir ?? lead.perfil.paraVivir,
     };

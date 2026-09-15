@@ -26,6 +26,7 @@ import {
   SISTEMA_CLOSER_V2,
   SISTEMA_CLOSER_V25,
   SISTEMA_CLOSER_V26,
+  SISTEMA_CLOSER_V27,
 } from "@/lib/agente/persona-v2";
 import { afirmacionesProhibidasEn } from "@/lib/dominio/afirmaciones";
 import type { PeticionModelo, ProveedorModelo, RespuestaModelo } from "@/lib/agente/modelo";
@@ -398,7 +399,7 @@ export interface SalidaCloser {
   origen: RespuestaModelo["origen"];
 }
 
-export type VersionPrompt = "v1" | "v2" | "v25" | "v26";
+export type VersionPrompt = "v1" | "v2" | "v25" | "v26" | "v27";
 
 /**
  * Los prompts disponibles.
@@ -412,6 +413,7 @@ export const PROMPTS: Record<VersionPrompt, { nombre: string; sistema: string }>
   v2: { nombre: "Closer v2.0", sistema: `${SISTEMA_CLOSER_V2}${CONTRATO_DE_HECHOS}` },
   v25: { nombre: "Closer v2.5", sistema: `${SISTEMA_CLOSER_V25}${CONTRATO_DE_HECHOS}` },
   v26: { nombre: "Closer v2.6", sistema: `${SISTEMA_CLOSER_V26}${CONTRATO_DE_HECHOS}` },
+  v27: { nombre: "Closer v2.7", sistema: `${SISTEMA_CLOSER_V27}${CONTRATO_DE_HECHOS}` },
 };
 
 /**
@@ -429,6 +431,7 @@ export type Intervencion = "correccion" | "ninguna";
 /** El prompt como se envía, según cuánto intervenga el sistema. */
 export function sistemaDe(version: VersionPrompt, intervencion: Intervencion): string {
   if (intervencion === "ninguna") {
+    if (version === "v27") return SISTEMA_CLOSER_V27;
     if (version === "v26") return SISTEMA_CLOSER_V26;
     if (version === "v25") return SISTEMA_CLOSER_V25;
     return version === "v2" ? SISTEMA_CLOSER_V2 : SISTEMA_CLOSER;

@@ -58,7 +58,9 @@ export function extraerPerfilHeuristico(lead: Lead): Extraccion {
   const grandes = montos.filter((monto) => monto >= 5_000_000);
   const chicos = montos.filter((monto) => monto < 5_000_000);
 
-  const mencionaCuota = /cuota|dividendo/i.test(texto);
+  // Un aval es deuda para el banco aunque nunca haya pagado una cuota, y
+  // casi nadie lo llama "cuota": dice "salí de aval, son $400.000 al mes".
+  const mencionaCuota = /cuota|dividendo|aval|pago mensual/i.test(texto);
   const rentaClp = chicos.find((monto) => monto >= 300_000) ?? null;
   const cuotaConsumo = mencionaCuota ? (chicos.find((monto) => monto < 500_000 && monto !== rentaClp) ?? null) : null;
 
@@ -73,6 +75,16 @@ export function extraerPerfilHeuristico(lead: Lead): Extraccion {
   const paraInvertir = /invers|arrend|arriend|airbnb|plusval|rentabilidad|rentar\b/i.test(plano);
   const pagaContado = /al contado|pago contado|sin cr[ée]dito|efectivo/i.test(plano);
   const paraVivir = /vivir|primera vivienda|mi familia|mi señora|mi esposa|mi pareja/i.test(plano);
+
+  // Dicom con signo. Preguntarle a alguien por sus deudas hace que conteste
+  // "nunca he estado en Dicom", y leer eso como Dicom vigente le borra la
+  // capacidad de compra entera: es peor que no haber preguntado.
+  const mencionaDicom = /dicom|moros|bolet[íi]n/i.test(plano);
+  const loNiega =
+    /\b(no|nunca|jam[áa]s|sin)\b[^.]{0,30}(dicom|moros|bolet[íi]n)|(dicom|moros|bolet[íi]n)[^.]{0,20}\b(limpio|al d[íi]a|nada)\b/i.test(
+      plano,
+    );
+  const dicom = mencionaDicom ? !loNiega : null;
 
   return {
     rentaClp,
@@ -89,7 +101,7 @@ export function extraerPerfilHeuristico(lead: Lead): Extraccion {
     capacidadAhorroClp: null,
     ahorroClp: grandes.find((monto) => monto < 500_000_000) ?? null,
     tieneCuentaBancaria: null,
-    tieneDicom: /dicom|moros|bolet[íi]n/i.test(plano) ? true : null,
+    tieneDicom: dicom,
     creditosHipotecarios: null,
     dividendosMensualesClp: null,
     creditosConsumo: /cr[ée]dito de consumo/i.test(plano) ? 1 : null,

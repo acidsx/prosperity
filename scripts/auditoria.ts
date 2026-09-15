@@ -38,7 +38,7 @@ async function principal() {
   const corridas: unknown[] = [];
   const desactualizadas: Array<Record<string, string>> = [];
 
-  for (const version of ["v1", "v2", "v25", "v26"] as VersionPrompt[]) {
+  for (const version of ["v1", "v2", "v25", "v26", "v27"] as VersionPrompt[]) {
     for (const crudo of [false, true]) {
       for (const guion of ["A", "B", "C"] as GuionCloser[]) {
       const grabada = grabacion(guion, version, crudo);
